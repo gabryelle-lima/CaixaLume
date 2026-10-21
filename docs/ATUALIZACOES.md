@@ -2,9 +2,9 @@
 
 ## Estado atual
 
-O código e os pacotes serão guardados em um repositório GitHub privado. A publicação local cria uma pasta executável, um ZIP versionado e seu SHA-256. O fluxo do GitHub cria uma versão **rascunho**, que precisa ser revisada e publicada pelo responsável. Nenhum pacote é instalado automaticamente neste estágio.
+O código está no repositório privado `gabryelle-lima/CaixaLume`. A versão inicial [v0.1.0](https://github.com/gabryelle-lima/CaixaLume/releases/tag/v0.1.0) foi publicada como pré-lançamento privado. A publicação local cria uma pasta executável, um ZIP versionado e seu SHA-256. O fluxo do GitHub cria as versões seguintes como **rascunho**, para revisão antes da publicação. Nenhum pacote é instalado automaticamente neste estágio.
 
-O instalador privado exige autenticação para baixar uma versão do GitHub. O aplicativo não deve conter uma chave de acesso embutida. A integração de atualização deverá usar login do proprietário e guardar a credencial protegida no Windows. Esse passo depende do repositório e da identidade GitHub que serão usados.
+O pacote atual é um ZIP executável, não um instalador. Para baixar um lançamento privado do GitHub é necessário autenticar a conta com acesso ao repositório. O aplicativo não deve conter uma chave de acesso embutida. Uma futura atualização automática precisará de login do proprietário e armazenamento protegido da credencial no Windows.
 
 ## Processo de manutenção
 
@@ -18,3 +18,4 @@ O instalador privado exige autenticação para baixar uma versão do GitHub. O a
 ## Diagnóstico da lentidão
 
 O aplicativo registra no `application.log` os tempos de navegação, resposta de dados e conclusão da tela. Isso permite separar custo do WebView2, banco e desenho da interface. O log fica em `%LOCALAPPDATA%\MercadinhoPdv\logs`.
+
