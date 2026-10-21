@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+.vs/
+artifacts/
+*.user
+*.suo
+*.db
+*.db-*
+*.bak
+*.log
+*.pfx
+*.p12
+*.key
+*.pem
+.env
+.env.*

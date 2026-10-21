@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>Mercado · Produtos</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./products.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-copy"><strong id="store-name">Mercado</strong><small>GESTÃO DE LOJA</small></span></div>
+      <div class="nav-caption">OPERAÇÃO</div>
+      <nav class="primary-nav">
+        <button class="nav-item" data-page="home.html" type="button"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+        <button class="nav-item" data-page="index.html" type="button"><span class="nav-icon">▦</span><span>Ponto de venda</span><kbd>F2</kbd></button>
+        <button class="nav-item active" data-page="products.html" type="button" aria-current="page"><span class="nav-icon">▤</span><span>Produtos</span></button>
+        <button class="nav-item" data-module="stock" type="button"><span class="nav-icon">◫</span><span>Estoque</span></button>
+        <button class="nav-item" data-module="cash" type="button"><span class="nav-icon">▣</span><span>Caixa</span></button>
+        <button class="nav-item" data-module="sales" type="button"><span class="nav-icon">↗</span><span>Vendas</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-item" data-module="expenses" type="button"><span class="nav-icon">▧</span><span>Despesas</span></button>
+        <button class="nav-item" data-page="reports.html" type="button"><span class="nav-icon">▥</span><span>Relatórios</span></button>
+        <button class="nav-item" data-module="suppliers" type="button"><span class="nav-icon">♧</span><span>Fornecedores</span></button>
+        <button class="nav-item" data-module="settings" type="button"><span class="nav-icon">⚙</span><span>Configurações</span></button>
+        <button class="nav-item" data-module="users" type="button"><span class="nav-icon">♙</span><span>Usuários</span></button>
+        <button class="nav-item" id="logout-button" type="button"><span class="nav-icon">⇥</span><span>Sair</span></button>
+        <div class="offline-status"><span class="connection-dot"></span><span>Aplicativo local · offline</span></div>
+      </div>
+    </aside>
+    <main class="main-area">
+      <header class="topbar"><div class="breadcrumbs"><span id="breadcrumb-store">Mercado</span><span class="crumb-separator">/</span><strong>Produtos</strong></div><div class="topbar-actions"><span class="user-avatar" id="user-avatar">M</span><span id="user-label">Operador</span><span class="role-badge" id="user-role">OPERADOR</span></div></header>
+      <section class="products-view">
+        <div class="checkout-status" id="products-error" role="alert" hidden><strong>Não foi possível carregar produtos</strong><span id="products-error-text"></span><button class="button button-secondary" id="retry-products" type="button">Tentar novamente</button></div>
+        <div class="products-heading"><div><span class="eyebrow">CATÁLOGO E CADASTRO</span><h1>Produtos</h1><p>Consulte preços, saldos e validades em um só lugar.</p></div><button class="button button-primary" id="new-product" type="button"><span>＋</span> Novo produto</button></div>
+        <div class="products-toolbar">
+          <label class="search-box products-search"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Pesquisar por nome ou código de barras" autocomplete="off" aria-label="Pesquisar produtos" /></label>
+          <div class="category-filter" id="category-filter" role="group" aria-label="Categorias"></div>
+          <button class="filter-toggle" id="inactive-toggle" type="button" aria-pressed="false">Incluir inativos</button>
+        </div>
+        <section class="products-card" aria-label="Lista de produtos">
+          <div class="products-card-top"><strong id="product-count">Carregando produtos…</strong><span>Selecione uma linha para ver as ações</span></div>
+          <div class="products-table-wrap"><table class="products-table"><thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>CATEGORIA</th><th>UNID.</th><th class="right">PREÇO</th><th class="right">ESTOQUE</th><th>VALIDADE</th><th>STATUS</th></tr></thead><tbody id="product-rows"></tbody></table><div class="products-empty" id="products-empty" hidden><span>▤</span><strong>Nenhum produto encontrado</strong><small>Altere a busca ou cadastre um produto.</small></div></div>
+          <div class="products-actions"><span id="selected-product">Nenhum produto selecionado</span><div><button class="button button-secondary" id="edit-product" type="button" disabled>Editar</button><button class="button button-secondary" id="toggle-product" type="button" disabled>Desativar</button><button class="button button-danger" id="delete-product" type="button" hidden disabled>Excluir produto</button></div></div>
+        </section>
+      </section>
+    </main>
+  </div>
+  <dialog class="modal" id="confirm-modal" aria-labelledby="confirm-title"><div class="modal-card"><div class="modal-header"><h2 id="confirm-title">Confirmar</h2></div><p class="modal-description" id="confirm-description"></p><div class="confirm-actions"><button class="button button-secondary" id="confirm-cancel" type="button">Voltar</button><button class="button button-danger" id="confirm-accept" type="button">Confirmar</button></div></div></dialog>
+  <dialog class="product-dialog" id="product-modal" aria-labelledby="product-modal-title">
+    <form id="product-form" novalidate>
+      <header class="product-dialog-header"><div><span class="eyebrow">CADASTRO DE PRODUTO</span><h2 id="product-modal-title">Novo produto</h2></div><button class="icon-button" id="close-product" type="button" aria-label="Fechar">×</button></header>
+      <div class="product-dialog-body">
+        <section class="form-section"><h3>Dados para venda</h3><div class="product-form-grid">
+          <label>Código de barras<div class="input-with-action"><input id="field-barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="Leia ou digite o código" /><button class="button button-secondary" id="lookup-product" type="button">Buscar catálogo</button></div></label>
+          <label>Nome do produto *<input id="field-name" type="text" required maxlength="120" autocomplete="off" placeholder="Nome que aparecerá na venda" /></label>
+          <label>Preço de venda (R$) *<input id="field-price" type="text" inputmode="decimal" required placeholder="Ex.: 14,27" /></label>
+          <label>Unidade de medida<select id="field-unit"><option value="UN">Unidade (UN)</option><option value="KG">Peso (KG)</option></select></label>
+          <label>Estoque atual <span id="stock-unit">(UN)</span><input id="field-stock" type="text" inputmode="decimal" placeholder="0" /></label>
+        </div></section>
+        <section class="form-section"><h3>Detalhes e controle</h3><div class="product-form-grid two-columns">
+          <label>Categoria<select id="field-category"></select></label><label>Fornecedor<select id="field-supplier"></select></label>
+          <label>Marca<input id="field-brand" type="text" maxlength="120" /></label><label>Preço de custo (R$)<input id="field-cost" type="text" inputmode="decimal" placeholder="0,00" /></label>
+          <label>Estoque mínimo<input id="field-min-stock" type="text" inputmode="decimal" placeholder="0" /></label><label>Validade<input id="field-expiry" type="date" /></label>
+        </div></section>
+        <section class="form-section"><h3>Imagem</h3><div class="product-form-grid"><label>URL da imagem<input id="field-image-url" type="url" placeholder="https://…" /></label><div class="image-preview"><img id="product-image-preview" alt="Prévia da imagem do produto" hidden /><span id="image-preview-empty">Nenhuma imagem cadastrada</span></div><div class="image-picker"><button class="button button-secondary" id="pick-image" type="button">Escolher imagem</button><button class="button button-secondary" id="remove-image" type="button">Remover imagem</button><span id="image-file-label">Nenhum arquivo novo selecionado</span></div></div></section>
+        <p class="form-error" id="product-form-error" role="alert"></p>
+      </div>
+      <footer class="product-dialog-footer"><button class="button button-secondary" id="cancel-product" type="button">Cancelar</button><button class="button button-primary" id="save-product" type="submit">Salvar produto</button></footer>
+    </form>
+  </dialog>
+  <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
+  <script src="./bridge.js" defer></script><script src="./ui.js" defer></script><script src="./products.js" defer></script>
+</body>
+</html>

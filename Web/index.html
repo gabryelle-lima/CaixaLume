@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <title>Mercado · Ponto de venda</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-copy"><strong id="store-name">Mercado</strong><small>GESTÃO DE LOJA</small></span></div>
+        <div class="nav-caption">OPERAÇÃO</div>
+        <nav class="primary-nav">
+          <button class="nav-item" data-page="home.html" type="button"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+          <button class="nav-item active" data-page="index.html" type="button" aria-current="page"><span class="nav-icon">▦</span><span>Ponto de venda</span><kbd>F2</kbd></button>
+          <button class="nav-item" data-page="products.html" type="button"><span class="nav-icon">▤</span><span>Produtos</span></button>
+          <button class="nav-item" data-module="stock" type="button"><span class="nav-icon">◫</span><span>Estoque</span></button>
+          <button class="nav-item" data-module="cash" type="button"><span class="nav-icon">▣</span><span>Caixa</span></button>
+          <button class="nav-item" data-module="sales" type="button"><span class="nav-icon">↗</span><span>Vendas</span></button>
+        </nav>
+        <div class="sidebar-bottom"><button class="nav-item" data-module="expenses" type="button"><span class="nav-icon">▧</span><span>Despesas</span></button><button class="nav-item" data-page="reports.html" type="button"><span class="nav-icon">▥</span><span>Relatórios</span></button><button class="nav-item" data-module="suppliers" type="button"><span class="nav-icon">♧</span><span>Fornecedores</span></button><button class="nav-item" data-module="settings" type="button"><span class="nav-icon">⚙</span><span>Configurações</span></button><button class="nav-item" data-module="users" type="button"><span class="nav-icon">♙</span><span>Usuários</span></button><button class="nav-item" id="logout-button" type="button"><span class="nav-icon">⇥</span><span>Sair</span></button><span class="connection-dot"></span><span>Aplicativo local · offline</span></div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div class="breadcrumbs"><span>Operação</span><span class="crumb-separator">/</span><strong>Ponto de venda</strong></div>
+          <div class="topbar-actions"><span class="user-avatar" id="user-avatar">M</span><span class="user-label" id="user-label">Operador</span><span class="role-badge" id="user-role">OPERADOR</span></div>
+        </header>
+
+        <section class="workspace" aria-label="Ponto de venda">
+          <div class="catalog-panel">
+            <div class="page-heading"><div><div class="eyebrow">FRENTE DE CAIXA</div><h1>Nova venda</h1><p>Busque um item ou selecione no catálogo.</p></div><button class="cash-pill" id="cash-status" type="button"><span></span> Verificando caixa...</button></div>
+            <div class="catalog-toolbar"><label class="search-box"><span aria-hidden="true">⌕</span><input id="product-search" type="search" placeholder="Buscar produto ou código de barras" autocomplete="off" aria-label="Buscar produto" /><kbd>F2</kbd></label><span class="result-count" id="result-count"></span></div>
+            <div class="category-strip" id="category-list" role="tablist" aria-label="Categorias"></div>
+            <section class="product-grid" id="product-grid" aria-label="Catálogo de produtos" aria-live="polite"></section>
+          </div>
+
+          <aside class="cart-panel" aria-label="Carrinho da venda">
+            <div class="cart-heading"><div><div class="eyebrow">VENDA ATUAL</div><h2>Carrinho <span class="cart-badge" id="cart-count">0</span></h2></div><button class="icon-button" id="clear-cart" type="button" aria-label="Limpar carrinho" title="Limpar carrinho">⌫</button></div>
+            <div class="checkout-status" id="checkout-status" role="status" hidden><strong>Resultado do pagamento pendente</strong><span>Reveja a mesma operação antes de iniciar outra venda.</span><button class="button button-secondary" id="retry-checkout" type="button">Consultar a mesma venda</button></div>
+            <div class="checkout-status" id="load-error" role="alert" hidden><strong>Não foi possível carregar o PDV</strong><span id="load-error-text"></span><button class="button button-secondary" id="retry-load" type="button">Tentar novamente</button></div>
+            <div class="cart-list" id="cart-list" aria-live="polite"></div>
+            <div class="cart-footer">
+              <div class="total-row"><span>Subtotal</span><strong id="subtotal">R$ 0,00</strong></div>
+              <div class="total-row"><span>Desconto</span><strong id="discount-total">R$ 0,00</strong></div>
+              <div class="total-row"><span>Acréscimo</span><strong id="surcharge-total">R$ 0,00</strong></div>
+              <button class="button button-secondary adjustment-button" id="edit-adjustments" type="button" disabled>Desconto / acréscimo</button>
+              <div class="grand-total"><span>Total a pagar</span><strong id="total">R$ 0,00</strong></div>
+              <button class="button button-primary charge-button" id="charge-button" type="button" disabled><span>▣</span> Cobrar <strong id="charge-total">R$ 0,00</strong><span class="button-arrow">→</span></button>
+              <div class="shortcut-hint">Pressione <kbd>F4</kbd> para cobrar</div>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
+    <dialog class="modal" id="payment-modal" aria-labelledby="payment-title">
+      <form method="dialog" class="modal-card" id="payment-form">
+        <div class="modal-header"><div><div class="eyebrow">FINALIZAR VENDA</div><h2 id="payment-title">Pagamento</h2></div><button class="icon-button" type="button" data-close aria-label="Fechar">×</button></div>
+        <div class="payment-total"><span>Total da venda</span><strong id="payment-total">R$ 0,00</strong></div>
+        <p class="modal-description">Confira o recebimento antes de registrar. Pix e cartão são processados fora do sistema.</p>
+        <fieldset class="payment-methods"><legend>Forma de pagamento</legend>
+          <label class="payment-option selected"><input type="radio" name="payment-method" value="DINHEIRO" checked /><span class="method-icon">▤</span>Dinheiro</label>
+          <label class="payment-option"><input type="radio" name="payment-method" value="PIX" /><span class="method-icon">⌗</span>Pix</label>
+          <label class="payment-option"><input type="radio" name="payment-method" value="DÉBITO" /><span class="method-icon">▣</span>Débito</label>
+          <label class="payment-option"><input type="radio" name="payment-method" value="CRÉDITO" /><span class="method-icon">▣</span>Crédito</label>
+        </fieldset>
+        <label class="field-label" id="received-label" for="amount-received">Valor recebido</label>
+        <div class="money-input"><span>R$</span><input id="amount-received" type="text" inputmode="decimal" autocomplete="off" aria-describedby="money-help" /></div><small class="field-help" id="money-help">Use vírgula para centavos. Exemplo: 14,27.</small>
+        <div class="change-row"><span>Troco</span><strong id="change-value">R$ 0,00</strong></div>
+        <button class="button button-primary confirm-payment" id="confirm-payment" type="submit"><span>Confirmar pagamento</span><span class="button-arrow">→</span></button>
+        <p class="form-error" id="payment-error" role="alert"></p>
+      </form>
+    </dialog>
+
+    <dialog class="modal" id="success-modal" aria-labelledby="success-title">
+      <section class="modal-card success-card"><div class="success-mark">✓</div><div class="eyebrow">VENDA REGISTRADA</div><h2 id="success-title">Venda concluída</h2><p id="success-detail"></p><button class="button button-primary confirm-payment" id="new-sale" type="button">Nova venda <span class="button-arrow">→</span></button></section>
+    </dialog>
+
+    <dialog class="modal" id="cash-modal" aria-labelledby="cash-title">
+      <form method="dialog" class="modal-card" id="cash-form"><div class="modal-header"><div><div class="eyebrow">INÍCIO DO TURNO</div><h2 id="cash-title">Abrir caixa</h2></div><button class="icon-button" type="button" data-close aria-label="Fechar">×</button></div><p class="modal-description">Informe o valor disponível no caixa para iniciar as vendas.</p><label class="field-label" for="opening-balance">Saldo inicial</label><div class="money-input"><span>R$</span><input id="opening-balance" type="text" value="0,00" inputmode="decimal" /></div><button class="button button-primary confirm-payment" id="open-cash" type="submit">Abrir caixa <span class="button-arrow">→</span></button><p class="form-error" id="cash-error" role="alert"></p></form>
+    </dialog>
+
+    <dialog class="modal" id="unknown-modal" aria-labelledby="unknown-title"><section class="modal-card">
+      <div class="modal-header"><h2 id="unknown-title">Produto não encontrado</h2><button class="icon-button" type="button" data-close aria-label="Fechar">×</button></div>
+      <p>Não há correspondência para <strong id="unknown-code"></strong>. A venda atual será mantida.</p>
+      <button class="button button-primary" type="button" id="lookup-product">Consultar ou cadastrar produto</button>
+      <p class="modal-description">O cadastro exige administrador. Depois de salvar, leia o código novamente.</p>
+    </section></dialog>
+    <dialog class="modal" id="weight-modal" aria-labelledby="weight-title"><form class="modal-card" id="weight-form">
+      <div class="modal-header"><h2 id="weight-title">Informar peso</h2><button class="icon-button" type="button" data-close aria-label="Fechar">×</button></div>
+      <p class="modal-description" id="weight-product"></p><p class="modal-description" id="weight-price"></p>
+      <label class="field-label" for="weight-value">Peso medido (kg)</label><div class="money-input"><input id="weight-value" type="text" inputmode="decimal" placeholder="Ex.: 0,315" autocomplete="off" /><span>kg</span></div>
+      <p class="form-error" id="weight-error" role="alert"></p><button class="button button-primary" type="submit">Adicionar peso ao carrinho</button>
+    </form></dialog>
+    <dialog class="modal" id="adjustments-modal" aria-labelledby="adjustments-title"><form class="modal-card" id="adjustments-form">
+      <div class="modal-header"><h2 id="adjustments-title">Desconto e acréscimo</h2><button class="icon-button" type="button" data-close aria-label="Fechar">×</button></div>
+      <label class="field-label" for="discount-type">Tipo de desconto</label><select id="discount-type"><option value="VALOR">Valor em R$</option><option value="PERCENTUAL">Percentual (%)</option></select>
+      <label class="field-label" for="discount-value">Desconto</label><div class="money-input"><input id="discount-value" type="text" inputmode="decimal" value="0" /></div>
+      <label class="field-label" for="surcharge-value">Acréscimo em R$</label><div class="money-input"><input id="surcharge-value" type="text" inputmode="decimal" value="0" /></div>
+      <div class="payment-total"><span>Total ajustado</span><strong id="adjustment-preview"></strong></div>
+      <p id="adjustment-error" class="form-error" role="alert"></p><button class="button button-primary" type="submit">Aplicar à venda</button>
+    </form></dialog>
+    <script src="./bridge.js" defer></script>
+    <script src="./ui.js" defer></script>
+    <script src="./pdv-domain.js" defer></script>
+    <script src="./app.js" defer></script>
+  </body>
+</html>

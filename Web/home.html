@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <title>Mercado · Visão geral</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./home.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-copy"><strong id="store-name">Mercado</strong><small>GESTÃO DE LOJA</small></span></div>
+        <div class="nav-caption">OPERAÇÃO</div>
+        <nav class="primary-nav">
+          <button class="nav-item active" data-page="home.html" type="button" aria-current="page"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+          <button class="nav-item" data-page="index.html" type="button"><span class="nav-icon">▦</span><span>Ponto de venda</span><kbd>F2</kbd></button>
+          <button class="nav-item" data-page="products.html" type="button"><span class="nav-icon">▤</span><span>Produtos</span></button>
+          <button class="nav-item" data-module="stock" type="button"><span class="nav-icon">◫</span><span>Estoque</span></button>
+          <button class="nav-item" data-module="cash" type="button"><span class="nav-icon">▣</span><span>Caixa</span></button>
+          <button class="nav-item" data-module="sales" type="button"><span class="nav-icon">↗</span><span>Vendas</span></button>
+        </nav>
+        <div class="sidebar-bottom">
+          <button class="nav-item" data-module="expenses" type="button"><span class="nav-icon">▧</span><span>Despesas</span></button>
+          <button class="nav-item" data-page="reports.html" type="button"><span class="nav-icon">▥</span><span>Relatórios</span></button>
+          <button class="nav-item" data-module="suppliers" type="button"><span class="nav-icon">♧</span><span>Fornecedores</span></button>
+          <button class="nav-item" data-module="settings" type="button"><span class="nav-icon">⚙</span><span>Configurações</span></button>
+          <button class="nav-item" data-module="users" type="button"><span class="nav-icon">♙</span><span>Usuários</span></button>
+          <button class="nav-item" id="logout-button" type="button"><span class="nav-icon">⇥</span><span>Sair</span></button>
+          <div class="offline-status"><span class="connection-dot"></span><span>Aplicativo local · offline</span></div>
+        </div>
+      </aside>
+      <main class="main-area">
+        <header class="topbar"><div class="breadcrumbs"><span>Mercado</span><span class="crumb-separator">/</span><strong>Visão geral</strong></div><div class="topbar-actions"><span class="user-avatar" id="user-avatar">M</span><span class="user-label" id="user-label">Operador</span><span class="role-badge" id="user-role">OPERADOR</span></div></header>
+        <section class="dashboard-view">
+          <div class="checkout-status" id="dashboard-error" role="alert" hidden><strong>Não foi possível carregar a visão geral</strong><span id="dashboard-error-text"></span><button class="button button-secondary" id="retry-dashboard" type="button">Tentar novamente</button></div>
+          <div class="dashboard-heading"><div><div class="eyebrow" id="today-label">RESUMO DO NEGÓCIO</div><h1 id="greeting">Bem-vindo</h1><p>Veja o que está acontecendo na sua loja hoje.</p></div><div class="heading-actions"><span class="cash-pill" id="cash-status"><span></span> Verificando caixa...</span><button class="button button-primary open-pos" data-page="index.html" type="button"><span>＋</span> Abrir ponto de venda <span class="button-arrow">→</span></button></div></div>
+          <section class="metrics-grid" aria-label="Indicadores de hoje">
+            <article class="metric-card"><div class="metric-label">FATURAMENTO DE HOJE <span>↗</span></div><strong id="revenue">—</strong><small>Vendas concluídas no dia</small></article>
+            <article class="metric-card"><div class="metric-label">VENDAS <span>▦</span></div><strong id="sales-today">—</strong><small>Transações de hoje</small></article>
+            <article class="metric-card"><div class="metric-label">TICKET MÉDIO <span>◌</span></div><strong id="average-ticket">—</strong><small>Valor médio por venda</small></article>
+            <article class="metric-card warning-metric"><div class="metric-label">ESTOQUE BAIXO <span>△</span></div><strong id="low-stock-count">—</strong><small>Produtos no nível mínimo</small></article>
+          </section>
+          <section class="dashboard-grid">
+            <article class="dashboard-card recent-card"><div class="card-heading"><div><h2>Vendas recentes</h2><p>Últimas vendas concluídas</p></div><button class="text-action" data-module="sales" type="button">Ver histórico <span>→</span></button></div><div class="table-wrap"><table><thead><tr><th>VENDA</th><th>DATA E HORA</th><th>OPERADOR</th><th>PAGAMENTO</th><th class="right">TOTAL</th></tr></thead><tbody id="recent-sales"><tr><td colspan="5" class="loading-cell">Carregando vendas…</td></tr></tbody></table></div><div class="empty-panel" id="sales-empty" hidden><span>▦</span><strong>Nenhuma venda por enquanto</strong><small>As vendas concluídas aparecerão aqui.</small></div></article>
+            <article class="dashboard-card cash-card"><div class="card-heading"><div><h2>Frente de caixa</h2><p>Operação do turno</p></div><span class="cash-icon">▣</span></div><div class="cash-card-state" id="cash-card-state"></div><button class="button button-secondary" data-module="cash" type="button" id="cash-action">Abrir caixa <span class="button-arrow">→</span></button></article>
+            <article class="dashboard-card stock-card"><div class="card-heading"><div><h2>Estoque baixo</h2><p>Itens que precisam de atenção</p></div><button class="text-action" data-module="stock" type="button">Ver estoque <span>→</span></button></div><div class="alert-list" id="stock-alerts"></div><div class="empty-panel compact" id="stock-empty" hidden><span>✓</span><strong>Estoque em dia</strong><small>Nenhum produto no nível mínimo.</small></div></article>
+<article class="dashboard-card expired-card"><div class="card-heading"><div><h2>Produtos vencidos</h2><p>Confira a validade antes de vender. A política de bloqueio ainda não foi definida.</p></div><button class="text-action" data-page="products.html" type="button">Ver produtos →</button></div><div class="alert-list" id="expired-alerts"></div><div class="empty-panel compact" id="expired-empty" hidden><strong>Nenhum produto vencido</strong></div></article>
+            <article class="dashboard-card expiry-card"><div class="card-heading"><div><h2>Próximos do vencimento</h2><p>Validade nos próximos 30 dias</p></div><button class="text-action" data-page="products.html" type="button">Ver produtos <span>→</span></button></div><div class="alert-list" id="expiry-alerts"></div><div class="empty-panel compact" id="expiry-empty" hidden><span>✓</span><strong>Nenhum alerta</strong><small>Não há produtos próximos do vencimento.</small></div></article>
+          </section>
+        </section>
+      </main>
+    </div>
+    <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
+    <script src="./bridge.js" defer></script><script src="./ui.js" defer></script><script src="./home.js" defer></script>
+  </body>
+</html>

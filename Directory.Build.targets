@@ -1,0 +1,8 @@
+<Project>
+  <Target Name="RemoveUnusedWebView2WpfReference" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <_UnusedWebView2Wpf Include="@(Reference)" Condition="'%(Reference.Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+      <Reference Remove="@(_UnusedWebView2Wpf)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,39 @@
+name: Preparar versão privada
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão no formato 0.1.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publicar pacote
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:RELEASE_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Versão inválida.' }
+          $destination = Join-Path $PWD ('artifacts\publicacao\CaixaLume-' + $env:RELEASE_VERSION)
+          & .\scripts\Publicar.ps1 -Destino $destination -Versao $env:RELEASE_VERSION
+      - name: Criar versão para revisão
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          $archive = Join-Path $PWD ('artifacts\publicacao\CaixaLume-' + $env:RELEASE_VERSION + '-win-x64.zip')
+          $checksum = $archive + '.sha256'
+          & gh release create ('v' + $env:RELEASE_VERSION) $archive $checksum --draft --title ('CaixaLume ' + $env:RELEASE_VERSION) --notes 'Pacote privado de atualização. Revise o arquivo e a versão antes de publicar.'
+          if ($LASTEXITCODE -ne 0) { throw 'Não foi possível criar a versão privada.' }

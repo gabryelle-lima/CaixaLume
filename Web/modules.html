@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="color-scheme" content="dark"/><title>Mercado · Gestão</title><link rel="stylesheet" href="./styles.css"/><link rel="stylesheet" href="./modules.css"/></head>
+<body><div class="app-shell">
+  <aside class="sidebar" aria-label="Navegação principal">
+    <div class="brand"><span class="brand-mark">M</span><span class="brand-copy"><strong id="store-name">Mercado</strong><small>GESTÃO DE LOJA</small></span></div>
+    <div class="nav-caption">OPERAÇÃO</div><nav class="primary-nav" id="primary-nav"></nav>
+    <div class="sidebar-bottom" id="secondary-nav"></div>
+  </aside>
+  <main class="main-area"><header class="topbar"><div class="breadcrumbs"><span id="breadcrumb-store">Mercado</span><span class="crumb-separator">/</span><strong id="breadcrumb-module">Gestão</strong></div><div class="topbar-actions"><span class="user-avatar" id="user-avatar">M</span><span id="user-label">Operador</span><span class="role-badge" id="user-role">OPERADOR</span></div></header>
+    <section class="module-view"><div class="module-heading"><div><span class="eyebrow" id="module-eyebrow">GESTÃO DA LOJA</span><h1 id="module-title">Carregando…</h1><p id="module-subtitle"></p></div><div class="heading-buttons" id="module-actions"></div></div>
+      <div class="module-message" id="module-error" role="alert" hidden></div><div class="module-metrics" id="module-metrics"></div>
+      <div class="module-toolbar" id="module-toolbar"></div><div class="module-tabs" id="module-tabs"></div>
+      <section class="module-card"><div class="module-card-heading"><strong id="module-count">Carregando…</strong><span id="module-hint">Selecione uma linha para ver as ações</span></div><div class="module-table-wrap"><table><thead id="module-head"></thead><tbody id="module-rows"></tbody></table><div class="module-empty" id="module-empty" hidden>Nenhum registro encontrado.</div></div><div class="module-row-actions" id="module-row-actions"></div></section>
+    </section>
+  </main></div>
+  <dialog class="module-dialog" id="module-dialog"><form id="module-form"><header><div><span class="eyebrow" id="dialog-eyebrow">GESTÃO</span><h2 id="dialog-title">Novo registro</h2></div><button class="icon-button" type="button" id="dialog-close" aria-label="Fechar">×</button></header><div class="dialog-fields" id="dialog-fields"></div><p class="dialog-error" id="dialog-error" role="alert"></p><footer><button class="button button-secondary" type="button" id="dialog-cancel">Cancelar</button><button class="button button-primary" type="submit" id="dialog-submit">Salvar</button></footer></form></dialog>
+  <dialog class="module-dialog" id="details-dialog"><div class="details-shell"><header><h2 id="details-title">Detalhes</h2><button class="icon-button" id="details-close" type="button" aria-label="Fechar">×</button></header><div id="details-content"></div><footer><button class="button button-secondary" id="details-done" type="button">Fechar</button></footer></div></dialog>
+  <div id="toast-region" class="toast-region" role="status"></div>
+  <script src="./bridge.js"></script><script src="./ui.js"></script><script src="./modules.js"></script>
+</body></html>

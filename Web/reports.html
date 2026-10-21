@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="color-scheme" content="dark" /><title>Mercado · Relatórios</title><link rel="stylesheet" href="./styles.css" /><link rel="stylesheet" href="./reports.css" /></head>
+<body><div class="app-shell">
+  <aside class="sidebar" aria-label="Navegação principal">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-copy"><strong id="store-name">Mercado</strong><small>GESTÃO DE LOJA</small></span></div>
+    <div class="nav-caption">OPERAÇÃO</div><nav class="primary-nav">
+      <button class="nav-item" data-page="home.html" type="button"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+      <button class="nav-item" data-page="index.html" type="button"><span class="nav-icon">▦</span><span>Ponto de venda</span><kbd>F2</kbd></button>
+      <button class="nav-item" data-page="products.html" type="button"><span class="nav-icon">▤</span><span>Produtos</span></button>
+      <button class="nav-item" data-module="stock" type="button"><span class="nav-icon">◫</span><span>Estoque</span></button>
+      <button class="nav-item" data-module="cash" type="button"><span class="nav-icon">▣</span><span>Caixa</span></button>
+      <button class="nav-item" data-module="sales" type="button"><span class="nav-icon">↗</span><span>Vendas</span></button>
+    </nav><div class="sidebar-bottom">
+      <button class="nav-item" data-module="expenses" type="button"><span class="nav-icon">▧</span><span>Despesas</span></button>
+      <button class="nav-item active" data-page="reports.html" type="button" aria-current="page"><span class="nav-icon">▥</span><span>Relatórios</span></button>
+      <button class="nav-item" data-module="suppliers" type="button"><span class="nav-icon">♧</span><span>Fornecedores</span></button>
+      <button class="nav-item" data-module="settings" type="button"><span class="nav-icon">⚙</span><span>Configurações</span></button>
+      <button class="nav-item" data-module="users" type="button"><span class="nav-icon">♙</span><span>Usuários</span></button>
+      <button class="nav-item" id="logout-button" type="button"><span class="nav-icon">⇥</span><span>Sair</span></button>
+      <div class="offline-status"><span class="connection-dot"></span><span>Aplicativo local · offline</span></div>
+    </div>
+  </aside>
+  <main class="main-area"><header class="topbar"><div class="breadcrumbs"><span id="breadcrumb-store">Mercado</span><span class="crumb-separator">/</span><strong>Relatórios</strong></div><div class="topbar-actions"><span class="user-avatar" id="user-avatar">M</span><span id="user-label">Operador</span><span class="role-badge" id="user-role">OPERADOR</span></div></header>
+    <section class="reports-view"><div class="reports-heading"><div><span class="eyebrow">ANÁLISE DO NEGÓCIO</span><h1>Relatórios</h1><p>Vendas, produtos e operação no período selecionado.</p></div><div class="export-actions"><button class="button button-secondary" id="print-report" type="button">Imprimir</button><button class="button button-secondary" id="pdf-report" type="button">Salvar PDF</button><button class="button button-primary" id="excel-report" type="button">Exportar Excel</button></div></div>
+      <form class="report-filters" id="report-filters"><label>Período<select id="period"><option value="today">Hoje</option><option value="yesterday">Ontem</option><option value="week">Últimos 7 dias</option><option value="month">Últimos 30 dias</option><option value="this-month">Este mês</option><option value="previous-month">Mês anterior</option><option value="custom">Personalizado</option></select></label><label class="custom-date" hidden>De<input id="start-date" type="date" /></label><label class="custom-date" hidden>Até<input id="end-date" type="date" /></label><button class="button button-primary" type="submit">Aplicar filtro</button></form>
+      <div class="checkout-status" id="report-error" role="alert" hidden><strong>Não foi possível carregar o relatório</strong><span id="report-error-text"></span></div>
+      <div class="report-period" id="report-period">Carregando período…</div>
+      <section class="report-metrics" aria-label="Resumo do período"><article><small>FATURAMENTO</small><strong id="metric-revenue">—</strong><span>Vendas concluídas</span></article><article><small>VENDAS</small><strong id="metric-sales">—</strong><span>Transações no período</span></article><article><small>TICKET MÉDIO</small><strong id="metric-ticket">—</strong><span>Valor por venda</span></article><article><small>LUCRO BRUTO ESTIMADO</small><strong id="metric-profit">—</strong><span>Receita menos custo dos itens</span></article></section>
+      <div class="report-breakdown"><span id="report-breakdown">Despesas, descontos e margem aparecerão aqui.</span><small>Totais por produto são valores brutos dos itens.</small></div>
+      <section class="report-card"><div class="report-tabs" id="report-tabs" role="tablist" aria-label="Tipo de relatório"></div><div class="report-table-heading"><div><h2 id="report-section-title">Vendas</h2><p id="report-section-description">Vendas concluídas no período</p></div><span id="report-row-count">0 registros</span></div><div class="report-table-wrap"><table class="report-table"><thead id="report-head"></thead><tbody id="report-rows"></tbody></table><div class="report-empty" id="report-empty" hidden><strong>Nenhum registro neste período</strong><span>Altere o período para consultar outros dados.</span></div></div></section>
+    </section>
+  </main></div><div class="toast-region" id="toast-region" role="status" aria-live="polite"></div><script src="./bridge.js" defer></script><script src="./ui.js" defer></script><script src="./reports.js" defer></script></body></html>
