@@ -4,7 +4,7 @@ CaixaLume é o nome do produto; **Mercado** continua sendo o nome inicial da loj
 
 ## Executar
 
-Use a publicação mais recente em `artifacts/publicacao/CaixaLume-*-win-x64-*`. Abra `MercadinhoPdv.exe` dentro dessa pasta, preservando a subpasta `Web`. Veja `docs/INSTALACAO_E_OPERACAO.md` para pré-requisitos, atualização e backup. O fluxo de versões privadas está descrito em `docs/ATUALIZACOES.md`.
+Baixe a [versão privada mais recente](https://github.com/gabryelle-lima/CaixaLume/releases), entre na sua conta GitHub e extraia o ZIP em uma pasta nova. Abra `MercadinhoPdv.exe` dentro dessa pasta, preservando a subpasta `Web`. Para executar a partir dos fontes, gere uma publicação em `artifacts/publicacao` com `scripts/Publicar.ps1`. Veja `docs/INSTALACAO_E_OPERACAO.md` para pré-requisitos, atualização e backup. O fluxo de versões privadas está descrito em `docs/ATUALIZACOES.md`.
 
 ```powershell
 dotnet run
@@ -40,3 +40,4 @@ Os cenários de integração usam um banco temporário, incluindo migração, au
 ## Limitações para produção comercial/fiscal
 
 O sistema ainda não emite NFC-e/NF-e nem integra com SEFAZ, SAT/MFE, adquirentes, TEF ou conciliação bancária. O PDF depende da impressora virtual do Windows; impressão física depende de uma impressora instalada. A margem usa o custo unitário gravado na venda; para vendas antigas, a migração usa o custo atual como aproximação. Ainda são necessários revisão fiscal/contábil, testes de recuperação em ambiente de implantação, política de retenção de backups e avaliação de segurança operacional antes de uso em produção.
+
