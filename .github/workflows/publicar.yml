@@ -7,6 +7,9 @@ on:
         description: 'Versão no formato 0.1.1'
         required: true
         type: string
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -22,8 +25,9 @@ jobs:
       - name: Publicar pacote
         shell: pwsh
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
         run: |
+          $env:RELEASE_VERSION = $env:RELEASE_VERSION.TrimStart('v')
           if ($env:RELEASE_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Versão inválida.' }
           $destination = Join-Path $PWD ('artifacts\publicacao\CaixaLume-' + $env:RELEASE_VERSION)
           & .\scripts\Publicar.ps1 -Destino $destination -Versao $env:RELEASE_VERSION
@@ -31,8 +35,10 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
         run: |
+          $env:RELEASE_VERSION = $env:RELEASE_VERSION.TrimStart('v')
+          if ($env:RELEASE_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Versão inválida.' }
           $archive = Join-Path $PWD ('artifacts\publicacao\CaixaLume-' + $env:RELEASE_VERSION + '-win-x64.zip')
           $checksum = $archive + '.sha256'
           $notesFile = Join-Path $env:RUNNER_TEMP 'notas-caixalume.md'

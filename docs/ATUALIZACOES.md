@@ -4,7 +4,7 @@
 
 O código fica no repositório privado `gabryelle-lima/CaixaLume`. A versão [v0.1.0](https://github.com/gabryelle-lima/CaixaLume/releases/tag/v0.1.0) é um pacote portátil anterior. A partir da 0.1.1, o ZIP gerado pelo projeto inclui `Instalar-CaixaLume.cmd`, `Iniciar-Piloto.cmd`, `VERSAO.txt`, um manifesto de arquivos com SHA-256, `COMO_EXECUTAR.md`, `ROTEIRO_PILOTO.md` e `VALIDACAO_MANUAL.md`. O fluxo `Preparar versão privada` cria um **rascunho** de lançamento no GitHub; ele não instala nada no computador da loja.
 
-O download exige uma conta com acesso ao repositório privado. Nenhuma chave do GitHub é embutida no programa ou no ZIP. A atualização é manual: baixar, extrair e executar o instalador com o aplicativo fechado. A operação do caixa foi projetada para ser local; seu funcionamento sem internet deve ser confirmado no piloto.
+O download exige uma conta com acesso ao repositório privado. Nenhuma chave do GitHub é embutida no programa ou no ZIP. Uma tag `vX.Y.Z` prepara automaticamente um rascunho privado; o fluxo também aceita disparo manual. A atualização no computador da loja continua manual: baixar, extrair e executar o instalador com o aplicativo fechado. A operação do caixa foi projetada para ser local; seu funcionamento sem internet deve ser confirmado no piloto.
 
 ## Preparar e aplicar uma atualização
 
