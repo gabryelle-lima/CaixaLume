@@ -11,8 +11,17 @@
     if (!window.chrome?.webview) return Promise.reject(new Error('A ponte com o aplicativo não está disponível.'));
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
-      const timeoutMs = action === 'products.pickImage' || action.startsWith('reports.export') || action === 'reports.print' || action === 'management.backup' || action === 'management.restore' ? 300000 : action === 'products.lookup' ? 25000 : 15000;
-      const timeout = window.setTimeout(() => { pending.delete(id); const error = new Error('O aplicativo demorou para responder.'); error.code = 'TIMEOUT'; reject(error); }, timeoutMs);
+      const transactional = action === 'pdv.checkout' || action === 'pdv.openCash';
+      const timeoutMs = action === 'products.pickImage' || action.startsWith('reports.export') || action === 'reports.print' || action === 'management.backup' || action === 'management.restore' ? 300000 : transactional ? 60000 : action === 'products.lookup' ? 25000 : 15000;
+      const timeout = window.setTimeout(() => {
+        pending.delete(id);
+        const message = action === 'pdv.checkout'
+          ? 'A venda ainda não teve confirmação. Ela pode ter sido registrada; consulte a mesma operação ou verifique o histórico antes de iniciar outra.'
+          : action === 'pdv.openCash'
+            ? 'A abertura do caixa ainda não teve confirmação. Verifique o status do caixa antes de tentar novamente.'
+            : 'O aplicativo demorou para responder.';
+        const error = new Error(message); error.code = transactional ? 'UNKNOWN_OUTCOME' : 'TIMEOUT'; reject(error);
+      }, timeoutMs);
       pending.set(id, { resolve, reject, timeout, started: performance.now(), action });
       window.chrome.webview.postMessage({ version: 1, id, action, payload });
     });

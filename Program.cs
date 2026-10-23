@@ -1,4 +1,6 @@
 using Microsoft.Web.WebView2.Core;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace MercadinhoPdv;
 
@@ -19,9 +21,24 @@ internal static class Program
         };
         try
         {
+            string databasePath = Path.GetFullPath(Data.DatabaseInitializer.DatabasePath).TrimEnd(Path.DirectorySeparatorChar).ToUpperInvariant();
+            string databaseKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(databasePath)));
+            using var instance = new Mutex(true, @"Local\CaixaLume-" + databaseKey, out bool firstInstance);
+            if (!firstInstance)
+            {
+                MessageBox.Show("O CaixaLume já está aberto com este banco de dados. Volte à janela existente antes de continuar.",
+                    "CaixaLume já aberto", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             Data.DatabaseInitializer.Initialize();
+            // O perfil do navegador precisa ficar em uma pasta gravável também na instalação.
             // Inicializa o runtime enquanto o usuário está na tela de acesso.
-            Task<CoreWebView2Environment> browserEnvironment = CoreWebView2Environment.CreateAsync();
+            bool testEnvironment = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE"));
+            string browserData = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MercadinhoPdv", testEnvironment ? "webview2-teste-" + databaseKey[..12] : "webview2");
+            Directory.CreateDirectory(browserData);
+            Task<CoreWebView2Environment> browserEnvironment = CoreWebView2Environment.CreateAsync(userDataFolder: browserData);
             while (true)
             {
                 using (var login = new Forms.LoginForm())

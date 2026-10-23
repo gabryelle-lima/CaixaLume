@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const state = { products: [], categories: ['TODOS'], category: 'TODOS', cart: new Map(), cashOpen: false, busy: false, policy: {}, role: 'OPERADOR', adjustment: {}, checkoutId: null, draftKey: null, draftRestored: false, pendingWeight: null, visibleLimit: 250 };
+  const state = { products: [], categories: ['TODOS'], category: 'TODOS', cart: new Map(), cashOpen: false, cashStatusUncertain: false, busy: false, policy: {}, role: 'OPERADOR', adjustment: {}, checkoutId: null, checkoutOutcomeUncertain: false, checkoutCancelledId: null, draftKey: null, draftRestored: false, pendingWeight: null, visibleLimit: 250 };
   const elements = Object.fromEntries(['product-search','product-grid','category-list','result-count','cart-list','cart-count','subtotal','total','charge-total','charge-button','clear-cart','cash-status','user-label','user-role','user-avatar','payment-modal','payment-form','payment-total','amount-received','received-label','change-value','confirm-payment','payment-error','success-modal','success-detail','new-sale','cash-modal','cash-form','opening-balance','open-cash','cash-error','toast-region'].map(id => [id, document.getElementById(id)]));
   const request = window.MercadoBridge.request;
   const domain = window.MercadoPdv;
@@ -49,6 +49,7 @@
       }
       state.adjustment = draft.adjustment || {};
       state.checkoutId = typeof draft.checkoutId === 'string' ? draft.checkoutId : null;
+      state.checkoutOutcomeUncertain = Boolean(state.checkoutId);
       if (draft.paymentMethod) {
         const option = [...elements['payment-form'].elements['payment-method']].find(radio => radio.value === draft.paymentMethod);
         if (option) option.checked = true;
@@ -62,6 +63,18 @@
 
   function showCheckoutStatus() {
     document.getElementById('checkout-status').hidden = !state.checkoutId;
+    const cancelled = state.checkoutCancelledId !== null;
+    document.getElementById('checkout-status-title').textContent = cancelled ? `Venda #${state.checkoutCancelledId} cancelada` : 'Resultado do pagamento pendente';
+    document.getElementById('checkout-status-description').textContent = cancelled
+      ? 'A operação foi localizada como cancelada. Confira o histórico antes de limpar esta tentativa.'
+      : 'Reveja a mesma operação antes de iniciar outra venda.';
+    document.getElementById('retry-checkout').hidden = cancelled;
+    document.getElementById('discard-cancelled-checkout').hidden = !cancelled;
+    if (cancelled) elements['charge-button'].disabled = true;
+  }
+  function setCashStatusUncertain(uncertain) {
+    state.cashStatusUncertain = uncertain;
+    elements['open-cash'].firstChild.textContent = uncertain ? 'Verificar caixa ' : 'Abrir caixa ';
   }
 
   function setCash(open) {
@@ -202,19 +215,22 @@
         button.title = button.disabled ? 'Disponível para administradores' : '';
       });
       document.getElementById('store-name').textContent = data.storeName || 'Mercado';
-      renderCategories(); renderProducts(); renderCart(); setCash(Boolean(data.cashOpen));
+      renderCategories(); renderProducts(); renderCart(); setCash(Boolean(data.cashOpen)); setCashStatusUncertain(false);
       document.getElementById('load-error').hidden = true;
       window.MercadoBridge.metric('ready', performance.now() - started);
+      return true;
     } catch (error) {
       document.getElementById('load-error-text').textContent = error.message;
       document.getElementById('load-error').hidden = false;
       elements['cash-status'].textContent = 'Status do caixa indisponível';
       elements['charge-button'].disabled = true;
+      return false;
     }
   }
 
   function openPayment() {
     if (state.busy || document.querySelector('dialog[open]')) return;
+    if (state.checkoutCancelledId !== null) { showCheckoutStatus(); return; }
     if (!state.cart.size) return;
     if (!state.cashOpen && !state.checkoutId) { elements['cash-modal'].showModal(); return; }
     elements['payment-error'].textContent = ''; elements['payment-total'].textContent = currency(total());
@@ -236,6 +252,13 @@
     elements['confirm-payment'].firstElementChild.textContent = state.checkoutId ? 'Consultar a mesma venda' : method ? `Registrar ${currency(total())} em ${method.toLocaleLowerCase('pt-BR')}` : 'Selecione a forma de pagamento';
   }
 
+  async function finishCheckout(response) {
+    state.checkoutId = null; state.checkoutOutcomeUncertain = false; state.checkoutCancelledId = null; state.adjustment = {};
+    state.cart.clear(); renderCart(); elements['payment-modal'].close();
+    const change = response.change > 0 ? ` · Troco ${currency(response.change)}` : '';
+    elements['success-detail'].textContent = `Venda #${String(response.saleId).padStart(5, '0')} · ${currency(response.total)} · ${response.paymentMethod}${change}`;
+    elements['success-modal'].showModal(); await loadData();
+  }
   async function submitPayment(event) {
     event.preventDefault(); if (state.busy || !state.cart.size) return;
     const method = elements['payment-form'].elements['payment-method'].value; const amount = parseMoneyInput(elements['amount-received'].value);
@@ -243,15 +266,42 @@
     if (method === 'DINHEIRO' && !Number.isFinite(amount)) { elements['payment-error'].textContent = 'Informe o valor recebido em reais. Exemplo: 14,27.'; elements['amount-received'].focus(); return; }
     if (method === 'DINHEIRO' && amount < total()) { elements['payment-error'].textContent = 'O valor recebido deve cobrir o total da venda.'; elements['amount-received'].focus(); return; }
     setBusy(true); elements['payment-error'].textContent = '';
+    let checkoutSent = false;
     try {
-      state.checkoutId ||= crypto.randomUUID(); saveDraft(); showCheckoutStatus();
-      const response = await request('pdv.checkout', { items: cartItems().map(item => ({ productId: item.product.id, quantity: item.quantity })), paymentMethod: method, amountReceived: method === 'DINHEIRO' ? amount : total(), adjustments: state.adjustment, operationId: state.checkoutId, expectedTotal: total() });
-      state.checkoutId = null; state.adjustment = {};
-      state.cart.clear(); renderCart(); elements['payment-modal'].close();
-      const change = response.change > 0 ? ` · Troco ${currency(response.change)}` : '';
-      elements['success-detail'].textContent = `Venda #${String(response.saleId).padStart(5, '0')} · ${currency(response.total)} · ${response.paymentMethod}${change}`;
-      elements['success-modal'].showModal(); await loadData();
-    } catch (error) { if (error.code === 'REJECTED' && !String(error.message).startsWith('Esta operação')) state.checkoutId = null; saveDraft(); showCheckoutStatus(); elements['payment-error'].textContent = error.message + (state.checkoutId ? ' Confirme novamente para consultar a mesma operação; não inicie outra venda antes de verificar o histórico.' : ''); }
+      const pendingCheckout = Boolean(state.checkoutId);
+      if (!state.checkoutId) { state.checkoutId = crypto.randomUUID(); state.checkoutOutcomeUncertain = false; }
+      saveDraft(); showCheckoutStatus();
+      if (pendingCheckout) {
+        const previous = await request('pdv.operationStatus', { operationId: state.checkoutId });
+        if (previous.found && previous.status === 'Concluida') { await finishCheckout(previous); return; }
+        if (previous.found) { elements['payment-error'].textContent = `A venda #${previous.saleId} já consta como ${previous.status}. Consulte o histórico antes de iniciar outra.`; return; }
+      }
+      const checkoutPayload = { items: cartItems().map(item => ({ productId: item.product.id, quantity: item.quantity })), paymentMethod: method, amountReceived: method === 'DINHEIRO' ? amount : total(), adjustments: state.adjustment, operationId: state.checkoutId, expectedTotal: total() };
+      checkoutSent = true;
+      const response = await request('pdv.checkout', checkoutPayload);
+      await finishCheckout(response);
+    } catch (error) {
+      if (checkoutSent && error.code === 'UNKNOWN_OUTCOME') state.checkoutOutcomeUncertain = true;
+      let status = null;
+      if (checkoutSent && state.checkoutId) {
+        try { status = await request('pdv.operationStatus', { operationId: state.checkoutId }); }
+        catch { /* Preserve a operação até que seja possível confirmar o resultado. */ }
+      }
+      if (status?.found && status.status === 'Concluida') { await finishCheckout(status); return; }
+      if (status?.found && status.status === 'Cancelada') {
+        state.checkoutCancelledId = status.saleId;
+        saveDraft(); showCheckoutStatus(); elements['payment-modal'].close();
+        notify(`A venda #${status.saleId} está cancelada. Confira o histórico antes de encerrar esta tentativa.`, true);
+        return;
+      }
+      const rejectedBeforeRegistration = error.code === 'REJECTED' && [
+        'Dados de pagamento inválidos.', 'Forma de pagamento inválida.',
+        'Produto ou quantidade inválidos.', 'Um dos produtos não está mais disponível.'
+      ].includes(error.message);
+      if (!state.checkoutOutcomeUncertain && (rejectedBeforeRegistration || (error.code === 'REJECTED' && error.message.startsWith('A venda precisa conter de ')) || (error.code === 'REJECTED' && status?.found === false))) state.checkoutId = null;
+      saveDraft(); showCheckoutStatus();
+      elements['payment-error'].textContent = error.message + (state.checkoutId && error.code !== 'UNKNOWN_OUTCOME' ? ' Use “Consultar a mesma venda” para verificar o resultado com o mesmo identificador.' : '');
+    }
     finally { setBusy(false); }
   }
 
@@ -262,18 +312,33 @@
   }
 
   async function submitCash(event) {
-    event.preventDefault(); const amount = parseMoneyInput(elements['opening-balance'].value);
+    event.preventDefault();
+    if (state.cashStatusUncertain) {
+      elements['open-cash'].disabled = true; elements['cash-error'].textContent = '';
+      try {
+        const refreshed = await loadData();
+        if (refreshed && state.cashOpen) { elements['cash-modal'].close(); notify('Caixa aberto confirmado. O PDV foi atualizado.'); }
+        else if (refreshed) elements['cash-error'].textContent = 'O caixa aparece fechado. O status foi atualizado; revise o saldo antes de abrir.';
+        else elements['cash-error'].textContent = 'Ainda não foi possível verificar o caixa. Use “Verificar caixa” novamente antes de abrir.';
+      } finally { elements['open-cash'].disabled = false; }
+      return;
+    }
+    const amount = parseMoneyInput(elements['opening-balance'].value);
     if (!Number.isFinite(amount) || amount < 0) { elements['cash-error'].textContent = 'Informe o saldo em reais. Exemplo: 50,00.'; elements['opening-balance'].focus(); return; }
     elements['open-cash'].disabled = true; elements['cash-error'].textContent = '';
-    try { await request('pdv.openCash', { openingBalance: amount }); elements['cash-modal'].close(); setCash(true); notify('Caixa aberto.'); }
+    try { await request('pdv.openCash', { openingBalance: amount }); elements['cash-modal'].close(); setCash(true); setCashStatusUncertain(false); notify('Caixa aberto.'); }
     catch (error) {
-      if (String(error.message).toLocaleLowerCase('pt-BR').includes('já existe um caixa aberto')) {
-        await loadData();
-        if (state.cashOpen) {
+      if (error.code === 'UNKNOWN_OUTCOME' || String(error.message).toLocaleLowerCase('pt-BR').includes('já existe um caixa aberto')) {
+        setCashStatusUncertain(true);
+        const refreshed = await loadData();
+        if (refreshed && state.cashOpen) {
           elements['cash-modal'].close();
-          notify('Já havia um caixa aberto. O PDV foi atualizado.');
+          notify('Caixa aberto confirmado. O PDV foi atualizado.');
           return;
         }
+        setCashStatusUncertain(true);
+        elements['cash-error'].textContent = refreshed ? 'A abertura pode ainda estar em andamento. Clique em “Verificar caixa” antes de tentar novamente.' : error.message;
+        return;
       }
       elements['cash-error'].textContent = error.message;
     }
@@ -306,6 +371,12 @@
     window.setTimeout(() => notice.remove(), 10000);
   });
   document.getElementById('retry-checkout').addEventListener('click', openPayment);
+  document.getElementById('discard-cancelled-checkout').addEventListener('click', async () => {
+    if (state.checkoutCancelledId === null || !window.confirm(`A venda #${state.checkoutCancelledId} está cancelada. Você conferiu o histórico e deseja limpar esta tentativa?`)) return;
+    state.checkoutId = null; state.checkoutOutcomeUncertain = false; state.checkoutCancelledId = null; state.adjustment = {};
+    state.cart.clear(); renderCart(); await loadData();
+    notify('Tentativa cancelada encerrada. Você pode iniciar outra venda.');
+  });
   document.getElementById('retry-load').addEventListener('click', loadData);
   elements['charge-button'].addEventListener('click', openPayment);
   elements['cash-status'].addEventListener('click', () => { if (!state.cashOpen) elements['cash-modal'].showModal(); });

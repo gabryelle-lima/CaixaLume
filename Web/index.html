@@ -39,7 +39,7 @@
 
           <aside class="cart-panel" aria-label="Carrinho da venda">
             <div class="cart-heading"><div><div class="eyebrow">VENDA ATUAL</div><h2>Carrinho <span class="cart-badge" id="cart-count">0</span></h2></div><button class="icon-button" id="clear-cart" type="button" aria-label="Limpar carrinho" title="Limpar carrinho">⌫</button></div>
-            <div class="checkout-status" id="checkout-status" role="status" hidden><strong>Resultado do pagamento pendente</strong><span>Reveja a mesma operação antes de iniciar outra venda.</span><button class="button button-secondary" id="retry-checkout" type="button">Consultar a mesma venda</button></div>
+            <div class="checkout-status" id="checkout-status" role="status" hidden><strong id="checkout-status-title">Resultado do pagamento pendente</strong><span id="checkout-status-description">Reveja a mesma operação antes de iniciar outra venda.</span><button class="button button-secondary" id="retry-checkout" type="button">Consultar a mesma venda</button><button class="button button-secondary" id="discard-cancelled-checkout" type="button" hidden>Encerrar tentativa cancelada</button></div>
             <div class="checkout-status" id="load-error" role="alert" hidden><strong>Não foi possível carregar o PDV</strong><span id="load-error-text"></span><button class="button button-secondary" id="retry-load" type="button">Tentar novamente</button></div>
             <div class="cart-list" id="cart-list" aria-live="polite"></div>
             <div class="cart-footer">

@@ -31,6 +31,7 @@ internal sealed class PdvWebBridge
         {
             "pdv.getData" => GetPdvData(),
             "pdv.checkout" => CompleteSale(request.Payload),
+            "pdv.operationStatus" => GetOperationStatus(request.Payload),
             "pdv.openCash" => OpenCash(request.Payload),
             _ => throw new InvalidOperationException("Ação não autorizada pela ponte do aplicativo.")
         };
@@ -49,8 +50,8 @@ internal sealed class PdvWebBridge
 
     private static string? GetImageData(string? path)
     {
-        if (string.IsNullOrWhiteSpace(path)) return null;
-        if (!File.Exists(path)) return null;
+        path = ImagemProdutoService.ResolveExistingPath(path);
+        if (path is null) return null;
         var info = new FileInfo(path);
         if (info.Length <= 0 || info.Length > 5 * 1024 * 1024) return null;
         string key = $"{path}|{info.Length}|{info.LastWriteTimeUtc.Ticks}";
@@ -107,6 +108,15 @@ internal sealed class PdvWebBridge
         return new CashOpenedResult(cashId, request.OpeningBalance);
     }
 
+    private object GetOperationStatus(JsonElement payload)
+    {
+        string? operationId = payload.GetProperty("operationId").GetString();
+        VendaOperacao? sale = _sales.ObterPorOperacao(operationId);
+        return sale is null
+            ? new OperationStatusResult(false, null, null, null, null, null, null)
+            : new OperationStatusResult(true, sale.Id, sale.Status, sale.Total, sale.FormaPagamento, sale.ValorRecebido, sale.Troco);
+    }
+
     public static object Error(string id, string message) => new BridgeResponse(1, id, false, null, message);
 
     private sealed record BridgeRequest(int Version, string Id, string Action, JsonElement Payload);
@@ -118,4 +128,5 @@ internal sealed class PdvWebBridge
     private sealed record CheckoutResult(long SaleId, decimal Total, string PaymentMethod, decimal AmountReceived, decimal Change);
     private sealed record CashOpenRequest(decimal OpeningBalance);
     private sealed record CashOpenedResult(long CashId, decimal OpeningBalance);
+    private sealed record OperationStatusResult(bool Found, long? SaleId, string? Status, decimal? Total, string? PaymentMethod, decimal? AmountReceived, decimal? Change);
 }

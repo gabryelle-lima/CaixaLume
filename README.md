@@ -4,7 +4,7 @@ CaixaLume é o nome do produto; **Mercado** continua sendo o nome inicial da loj
 
 ## Executar
 
-Baixe a [versão privada mais recente](https://github.com/gabryelle-lima/CaixaLume/releases), entre na sua conta GitHub e extraia o ZIP em uma pasta nova. Abra `MercadinhoPdv.exe` dentro dessa pasta, preservando a subpasta `Web`. Para executar a partir dos fontes, gere uma publicação em `artifacts/publicacao` com `scripts/Publicar.ps1`. Veja `docs/INSTALACAO_E_OPERACAO.md` para pré-requisitos, atualização e backup. O fluxo de versões privadas está descrito em `docs/ATUALIZACOES.md`.
+Baixe a [versão privada mais recente](https://github.com/gabryelle-lima/CaixaLume/releases) com uma conta GitHub que tenha acesso ao repositório. Extraia o ZIP inteiro e use `Instalar-CaixaLume.cmd` para instalar no perfil do Windows, ou abra `CaixaLume.exe` diretamente da pasta extraída. Preserve a subpasta `Web`. O instalador salva uma cópia do banco existente antes de trocar a versão; veja [instalação e operação](docs/INSTALACAO_E_OPERACAO.md) e [atualizações](docs/ATUALIZACOES.md). Para executar a partir dos fontes, use `dotnet run` ou gere a publicação com `scripts/Publicar.ps1`.
 
 ```powershell
 dotnet run
@@ -16,13 +16,13 @@ No primeiro acesso, crie o usuário administrador. Cadastre usuários adicionais
 
 - Dashboard com faturamento, vendas, ticket médio, caixa, estoque baixo e itens próximos da validade.
 - Produtos UN/KG, categorias, fornecedores, custo, preço, validade e código de barras; consulta opcional ao Open Food Facts API v3 com revisão antes de preencher os dados e cache local das imagens.
-- PDV com busca por nome/código, carrinho, pagamento em dinheiro/PIX/débito/crédito, troco e comprovante para impressão ou PDF quando o Windows disponibilizar a impressora virtual.
+- PDV com busca por nome/código, carrinho, pagamento em dinheiro/PIX/débito/crédito, cálculo de troco e confirmação da venda.
 - Dashboard, PDV, produtos, estoque, caixa, vendas, despesas, relatórios, fornecedores, configurações e usuários usam a interface integrada WebView2. O programa não alterna automaticamente para o PDV WinForms antigo.
 - Vendas transacionais, histórico, detalhes e cancelamento administrativo com devolução de estoque. O cancelamento exige que o caixa vinculado ainda esteja aberto.
 - Estoque com entrada, saída, ajuste, entrada de mercadoria com custo/fornecedor/documento/validade e histórico filtrável.
 - Caixa com abertura, suprimento, sangria, despesa, conferência, fechamento e histórico persistente.
 - Despesas pesquisáveis, editáveis e canceláveis; relatórios por período com custo, lucro bruto e margem estimados, impressão, PDF e Excel com abas por seção.
-- Auditoria de ações, gerenciamento de usuários/perfis e backup/restauração do SQLite. O backup usa snapshot consistente do SQLite; a restauração valida integridade e cria uma cópia do banco atual.
+- Auditoria de ações, gerenciamento de usuários/perfis e backup/restauração do SQLite. O backup usa snapshot consistente do SQLite; a restauração valida integridade e cria uma cópia do banco atual. Imagens locais precisam de cópia separada para recuperação em outro computador.
 - Desconto em reais ou percentual e acréscimo monetário, com política configurável pelo administrador, desabilitada por padrão.
 - Edição livre de peso com precisão de 1 g, distinção de produtos vencidos/próximos e proteção contra repetição de uma mesma operação de checkout.
 - Interface escura com navegação lateral e formulários com validação. Operadores podem consultar produtos e estoque; alterações administrativas permanecem protegidas.
@@ -35,9 +35,8 @@ dotnet build Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests
 dotnet run --project Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests.csproj --no-build --no-restore
 ```
 
-Os cenários de integração usam um banco temporário, incluindo migração, autenticação, estoque, entrada de mercadoria, vendas, cancelamento, caixa, despesas, relatórios e backup/restauração. Para arquitetura e estado da migração visual, consulte `docs/ARCHITECTURE_AUDIT.md`, `docs/IMPLEMENTATION_STATUS.md` e `docs/UI_MIGRATION_STATUS.md`.
+Os cenários de integração usam um banco temporário, incluindo migração, autenticação, estoque, entrada de mercadoria, vendas, cancelamento, caixa, despesas, relatórios e backup/restauração. O roteiro da primeira versão de teste está em [Piloto 0.1.1](docs/PILOTO_0.1.1.md). Para arquitetura e estado da interface, consulte `docs/ARCHITECTURE_AUDIT.md`, `docs/IMPLEMENTATION_STATUS.md` e `docs/UI_MIGRATION_STATUS.md`.
 
 ## Limitações para produção comercial/fiscal
 
 O sistema ainda não emite NFC-e/NF-e nem integra com SEFAZ, SAT/MFE, adquirentes, TEF ou conciliação bancária. O PDF depende da impressora virtual do Windows; impressão física depende de uma impressora instalada. A margem usa o custo unitário gravado na venda; para vendas antigas, a migração usa o custo atual como aproximação. Ainda são necessários revisão fiscal/contábil, testes de recuperação em ambiente de implantação, política de retenção de backups e avaliação de segurança operacional antes de uso em produção.
-

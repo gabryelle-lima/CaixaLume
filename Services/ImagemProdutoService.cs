@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using MercadinhoPdv.Data;
 
 namespace MercadinhoPdv.Services;
 
@@ -54,14 +55,29 @@ public sealed class ImagemProdutoService
     public static bool TryOpen(string? path, out Image? image)
     {
         image = null;
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return false;
-        try { using var source = Image.FromFile(path); image = new Bitmap(source); return true; }
+        string? localPath = ResolveExistingPath(path);
+        if (localPath is null) return false;
+        try { using var source = Image.FromFile(localPath); image = new Bitmap(source); return true; }
         catch (Exception ex) when (ex is ArgumentException or IOException or OutOfMemoryException) { return false; }
+    }
+
+    public static string? ResolveExistingPath(string? storedPath)
+    {
+        if (string.IsNullOrWhiteSpace(storedPath)) return null;
+        if (File.Exists(storedPath)) return storedPath;
+        // Bancos antigos guardam caminhos absolutos. Ao recuperar banco e imagens em
+        // outro perfil Windows, o arquivo pode estar na pasta local com o mesmo nome.
+        string fileName = Path.GetFileName(storedPath);
+        if (string.IsNullOrWhiteSpace(fileName)) return null;
+        string restoredPath = Path.Combine(CacheDirectory(), fileName);
+        return File.Exists(restoredPath) ? restoredPath : null;
     }
 
     private static string CacheDirectory()
     {
-        string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MercadinhoPdv", "imagens");
+        string path = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE"))
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MercadinhoPdv", "imagens")
+            : Path.Combine(Path.GetDirectoryName(DatabaseInitializer.DatabasePath)!, "imagens");
         Directory.CreateDirectory(path);
         return path;
     }

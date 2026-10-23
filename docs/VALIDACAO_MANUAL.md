@@ -1,46 +1,27 @@
-# Validação manual antes do piloto
+# Aceitação manual do CaixaLume
 
-Os testes automatizados aprovados não substituem este roteiro. Use uma base nova de teste, fora do caminho de produção, e preserve uma cópia antes de ensaiar restauração.
+Este roteiro deve ser executado na máquina do piloto com o banco isolado criado por `Iniciar-Piloto.cmd`. A revisão está pendente; a existência do roteiro não equivale a aprovação. Preserve o banco real e nunca ensaie restauração nele.
 
-## Situação observada nesta rodada
+## Abertura e navegação
 
-- O WebView2 não completou a inicialização no ambiente de inspeção; a alternativa WinForms foi efetivamente aberta com o usuário de teste autenticado.
-- Foi possível adicionar um produto no catálogo nativo, editar o peso para 0,315 kg e observar subtotal de R$ 6,27 para R$ 19,90/kg.
-- Capturas de janelas ocasionalmente retornaram conteúdo da janela que estava na frente, e ações posteriores encontraram estado de elemento indisponível ou geometria indisponível. A inspeção foi encerrada; isso não é aprovação visual dos demais módulos.
-- Os formulários de dashboard, PDV, produtos, estoque, caixa, vendas, despesas, relatórios, configurações, fornecedores, usuários e entrada de mercadoria foram construídos e receberam layout nos cinco tamanhos em um teste de componentes. Esse teste não avalia cortes, sobreposições ou aparência final.
-- A consulta online ao catálogo falhou por resolução de endereço. Os testes HTTP simulados cobrem sucesso, ausência, erro HTTP, JSON inválido, timeout e cancelamento.
+1. Instalar a versão privada com o programa fechado, abrir o lançador do piloto e conferir a indicação **AMBIENTE DE TESTE**.
+2. Criar administrador, sair e entrar. Abrir todos os módulos e voltar ao PDV. Conferir que não aparece uma segunda versão do programa e que a troca de páginas responde sem espera longa.
+3. Fechar e abrir o programa. Conferir dados e sessão conforme a política do aplicativo. Desligar a internet e confirmar que cadastro, venda, caixa e relatórios continuam acessíveis.
 
-## Matriz visual pendente
+## Venda e caixa
 
-Verifique 1024×768, 1280×720, 1366×768, 1440×900 e 1920×1080, em escalas de 100%, 125% e 150%. Não altere a escala durante uma venda. Em cada combinação, conferir:
+4. Cadastrar produtos UN e KG com preço, custo e estoque. Conferir busca por nome e código de barras, edição, imagem e inativação. Testar um produto sem estoque.
+5. Abrir o caixa com saldo inicial, tentar abrir novamente e confirmar que o caixa existente é reconhecido sem bloquear a tela.
+6. Adicionar e remover itens, alterar quantidade/peso e conferir subtotal, desconto, acréscimo e total. Fechar o modal sem confirmar e conferir que nada foi gravado.
+7. Concluir uma venda em dinheiro, uma com troco e uma em cada forma Pix, débito e crédito. No dinheiro, rejeitar valor insuficiente. Conferir número da venda, baixa de estoque, movimento do caixa, histórico e relatório.
+8. Caso uma confirmação demore ou a resposta se perca, consultar vendas e caixa antes de repetir a operação. Nunca presumir que uma mensagem de espera significa que nada foi gravado.
+9. Fazer suprimento, sangria e despesa, conferir saldo esperado e fechar caixa. Conferir histórico após reiniciar o aplicativo.
 
-| Tela | O que conferir |
-|---|---|
-| Dashboard | Indicadores, nome da loja, menus, vencidos em destaque e próximos do vencimento |
-| PDV Web e WinForms | Busca, grade, carrinho, campo de peso, contador, total, modais e rodapé acessíveis |
-| Produtos/cadastro | Rolagem dos campos, imagem, categoria, fornecedor, validade, salvar e cancelar |
-| Estoque/entrada | Filtros e ações acessíveis, quantidade UN/KG, motivo, histórico e documento |
-| Caixa | Data de abertura completa, valores, ações, conferência e histórico |
-| Vendas/despesas | Datas, valores monetários, detalhes, cancelamento e preservação do histórico |
-| Relatórios | Cabeçalhos, totais bruto/líquido, descontos/acréscimos e leitura com rolagem |
-| Configurações/usuários | Nome, backup, restauração e regras de ajuste; nenhuma limpeza disponível em Release |
+## Gestão, recuperação e apresentação
 
-## Fluxos de aceitação
+10. Como operador, tentar ações restritas a administrador. Como administrador, exportar relatório em Excel e PDF e imprimir em dispositivo configurado.
+11. Fazer backup; restaurar **somente em outro banco de teste**; conferir integridade, vendas e estoque após reiniciar. Copiar a pasta de imagens correspondente e conferir a prévia dos produtos. Simular atualização preservando a versão anterior e o backup correspondente.
+12. Conferir telas em 1024×768, 1366×768 e 1920×1080, com escalas de 100%, 125% e 150% usadas na loja: textos, tabelas, modais, rolagem e botões não devem ficar cortados.
+13. Se houver leitor de código, balança ou impressora no local, verificar cada equipamento. Consultar Open Food Facts com `3017620425035`, com código inexistente e offline; os dados digitados devem permanecer, com cadastro manual disponível.
 
-1. Criar administrador com senha curta deve falhar; senha com 10 ou mais caracteres deve funcionar. Credenciais existentes devem continuar autenticando.
-2. Como operador, tentar alterar cadastros, políticas, usuários, relatórios gerenciais e cancelar vendas deve ser negado pelo serviço.
-3. Abrir caixa, tentar abrir novamente e conferir que a tela usa o caixa já aberto.
-4. Ler um EAN conhecido e pressionar Enter: incluir uma vez, limpar a busca e manter foco. Repetir Enter sem código não deve incluir novamente.
-5. Ler código ausente: consultar/cadastrar sem perder os itens da venda. Produto inativo ou sem estoque não pode ser incluído na confirmação.
-6. Informar 0,125; 0.315; 0,750; 1.235 e 2,500 kg. Conferir subtotal e impedir fração em produto UN, zero, peso com quatro casas e quantidade acima do estoque.
-7. Conferir que fechar o modal pelo X ou cancelar não confirma pagamento nem abre caixa. Alt+F4 deve fechar a janela; F4 sem modificador deve iniciar a cobrança.
-8. Confirmar uma venda de cada forma, dinheiro exato, dinheiro com troco e pagamento insuficiente. Conferir baixa, caixa, auditoria e histórico.
-9. Repetir uma requisição de checkout com o mesmo identificador deve retornar a mesma venda. Após timeout, reconfirmar a operação pendente antes de iniciar outra venda.
-10. Ajustes devem começar desabilitados. Definir a política como administrador, conferir limites, aplicar valor/percentual e acréscimo; conciliar total, troco, caixa e relatório. Restaurar a política definida para o piloto.
-11. Consultar Open Food Facts com código 3017620425035, um código ausente e internet desligada. Confirmar que dados digitados permanecem e o cadastro manual continua disponível.
-12. Lançar despesa Pix sem caixa, abrir caixa e alterar para dinheiro; conferir vínculo e saldo. Fechar caixa e confirmar que editar/cancelar essa despesa é bloqueado.
-13. Cancelar venda com caixa aberto: estoque e movimento financeiro devem ser estornados uma vez, mantendo a venda cancelada no histórico e fora do faturamento.
-14. Ajustar estoque com motivo: conferir usuário, antes/depois e diferença na auditoria.
-15. Fazer backup, restaurar apenas em cópia de teste, fechar/reabrir e conferir dados. Ensaiar nova publicação em computador limpo e reinicialização do Windows.
-
-Leitor físico, balança, impressora, computador limpo e funcionamento após reinicialização real continuam pendentes de equipamento/ambiente.
+Registre qualquer falha com horário, versão, tela, passos e resultado esperado. O log de diagnóstico fica em `%LOCALAPPDATA%\MercadinhoPdv\logs\application.log`. Evite compartilhar senhas ou dados de clientes. Os critérios de liberação constam em [PILOTO_0.1.1.md](PILOTO_0.1.1.md).

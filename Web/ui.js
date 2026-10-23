@@ -5,7 +5,8 @@
     if (text !== undefined) node.textContent = text;
     return node;
   };
-  const currency = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+  const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  const currency = value => currencyFormatter.format(value || 0);
   const notify = (host, message, error = false) => {
     const toast = element('div', `toast${error ? ' error' : ''}`, message);
     host.append(toast); window.setTimeout(() => toast.remove(), 3600);

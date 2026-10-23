@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão no formato 0.1.0'
+        description: 'Versão no formato 0.1.1'
         required: true
         type: string
 
@@ -35,5 +35,14 @@ jobs:
         run: |
           $archive = Join-Path $PWD ('artifacts\publicacao\CaixaLume-' + $env:RELEASE_VERSION + '-win-x64.zip')
           $checksum = $archive + '.sha256'
-          & gh release create ('v' + $env:RELEASE_VERSION) $archive $checksum --draft --title ('CaixaLume ' + $env:RELEASE_VERSION) --notes 'Pacote privado de atualização. Revise o arquivo e a versão antes de publicar.'
+          $notesFile = Join-Path $env:RUNNER_TEMP 'notas-caixalume.md'
+          $notes = @'
+          Piloto controlado. A aceitação na máquina de teste ainda está pendente; este pacote não foi liberado para uso comercial.
+
+          Instalação manual: baixe o ZIP privado, extraia todos os arquivos e execute Instalar-CaixaLume.cmd com o aplicativo fechado. Leia COMO_EXECUTAR.md antes de atualizar. O banco de dados não está no ZIP.
+
+          Para testar sem tocar no banco real, execute Iniciar-Piloto.cmd na pasta da versão instalada. Ele usa uma base de teste separada. O atalho CaixaLume abre a operação normal.
+          '@
+          Set-Content -LiteralPath $notesFile -Value $notes -Encoding utf8
+          & gh release create ('v' + $env:RELEASE_VERSION) $archive $checksum --draft --prerelease --title ('CaixaLume ' + $env:RELEASE_VERSION) --notes-file $notesFile
           if ($LASTEXITCODE -ne 0) { throw 'Não foi possível criar a versão privada.' }

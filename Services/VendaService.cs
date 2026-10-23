@@ -21,5 +21,14 @@ public sealed class VendaService
     public List<VendaHistoricoLinha> ListarHistorico(DateTime inicio, DateTime fim, string? status = null) => _repository.ListarHistorico(inicio, fim, status);
     public List<VendaItemDetalhe> Detalhes(long vendaId) => _repository.Detalhes(vendaId);
     public TotaisVenda ObterTotais(long vendaId) => _repository.ObterTotais(vendaId);
+    public VendaOperacao? ObterPorOperacao(string? operacaoId)
+    {
+        if (!Guid.TryParse(operacaoId, out Guid parsed) || parsed == Guid.Empty)
+            throw new InvalidOperationException("Identificador da venda inválido.");
+        int usuarioId = Autorizacao.ExigirUsuario();
+        return _repository.ObterPorOperacao(parsed.ToString("D"), usuarioId);
+    }
     public void Cancelar(long vendaId, string motivo) => _repository.Cancelar(vendaId, motivo);
 }
+
+public sealed record VendaOperacao(long Id, string Status, decimal Total, string FormaPagamento, decimal ValorRecebido, decimal Troco);

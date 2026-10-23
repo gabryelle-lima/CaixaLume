@@ -6,7 +6,8 @@
   const descriptions = { stock: 'Saldos, entradas e movimentações dos produtos.', cash: 'Acompanhe o turno e as movimentações do caixa.', sales: 'Consulte vendas e seus detalhes.', expenses: 'Registre e acompanhe as despesas da loja.', suppliers: 'Gerencie fornecedores e categorias.', settings: 'Ajuste os dados e as regras da loja.', users: 'Controle o acesso dos operadores.' };
   const adminModules = new Set(['expenses', 'suppliers', 'settings', 'users']);
   const nav = [ ['home.html','⌂','Visão geral'],['index.html','▦','Ponto de venda'],['products.html','▤','Produtos'],['stock','◫','Estoque'],['cash','▣','Caixa'],['sales','↗','Vendas'],['expenses','▧','Despesas'],['reports.html','▥','Relatórios'],['suppliers','♧','Fornecedores'],['settings','⚙','Configurações'],['users','♙','Usuários'] ];
-  const state = { module: '', data: {}, role: '', tab: '', selected: null, rows: [], pending: false, sequence: 0 };
+  const state = { module: '', data: {}, role: '', tab: '', selected: null, selectedRow: null, rows: [], columns: [], displayedRows: 0, loading: false, searchTimer: null, sequence: 0 };
+  const tablePageSize = 150;
   const localDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const today = () => localDate(new Date());
   const prior = () => { const d = new Date(); d.setDate(d.getDate() - 29); return localDate(d); };
@@ -28,18 +29,20 @@
   function alertError(error) { notify($('toast-region'), error.message || String(error), true); }
   function navigate(module, push = true) {
     if (!names[module]) module = 'stock';
+    if (push && state.module === module) return;
     if (push) history.pushState({ module }, '', `./modules.html?module=${module}`);
-    state.module = module; state.tab = ''; state.selected = null; state.data = {};
+    clearTimeout(state.searchTimer);
+    state.module = module; state.tab = ''; state.selected = null; state.selectedRow = null; state.rows = []; state.data = {};
     document.querySelectorAll('[data-target]').forEach(b => { b.classList.toggle('active', b.dataset.target === module); b.disabled = adminModules.has(b.dataset.target) && Boolean(state.role) && state.role !== 'ADMINISTRADOR'; });
     $('module-title').textContent = names[module]; $('breadcrumb-module').textContent = names[module]; $('module-subtitle').textContent = descriptions[module]; document.title = `Mercado · ${names[module]}`;
-    $('module-error').hidden = true; $('module-metrics').replaceChildren(); $('module-actions').replaceChildren(); $('module-toolbar').replaceChildren(); $('module-tabs').replaceChildren(); $('module-head').replaceChildren(); $('module-rows').replaceChildren(); $('module-row-actions').replaceChildren(); $('module-count').textContent = 'Carregando…';
+    $('module-error').hidden = true; $('module-empty').hidden = true; $('module-load-more').hidden = true; $('module-metrics').replaceChildren(); $('module-actions').replaceChildren(); $('module-toolbar').replaceChildren(); $('module-tabs').replaceChildren(); $('module-head').replaceChildren(); $('module-rows').replaceChildren(); $('module-row-actions').replaceChildren(); $('module-count').textContent = 'Carregando…';
     renderToolbar(); load();
   }
   function filterField(type, id, placeholder, initial) { const input = element('input'); input.type = type; input.id = id; input.placeholder = placeholder; if (initial) input.value = initial; return input; }
   function renderToolbar() {
     const host = $('module-toolbar'), module = state.module;
     if (['stock','expenses','suppliers'].includes(module)) {
-      const search = filterField('search', 'filter-search', 'Pesquisar registros'); search.addEventListener('input', () => { clearTimeout(search._timer); search._timer = setTimeout(() => module === 'expenses' || (module === 'stock' && state.tab === 'movements') ? load() : render(), 250); }); host.append(search);
+      const search = filterField('search', 'filter-search', 'Pesquisar registros'); search.addEventListener('input', () => { clearTimeout(state.searchTimer); state.searchTimer = setTimeout(() => module === 'expenses' || (module === 'stock' && state.tab === 'movements') ? load() : render(), 250); }); host.append(search);
     }
     if (module === 'stock') {
       const status = element('select'); status.id = 'filter-stock-status'; [['','Todos os saldos'],['low','Estoque baixo'],['normal','Estoque normal']].forEach(([value,label]) => { const option = element('option','',label); option.value=value; status.append(option); }); status.addEventListener('change',render); host.append(status);
@@ -53,8 +56,10 @@
     host.append(button('↻ Atualizar', load));
   }
   async function load() {
+    clearTimeout(state.searchTimer); state.searchTimer = null;
     const started = performance.now();
     const module = state.module, sequence = ++state.sequence;
+    state.loading = true;
     $('module-error').hidden = true; $('module-count').textContent = 'Carregando…';
     try {
       const result = await request('management.getData', { module, tab: state.tab, start: $('filter-start')?.value || prior(), end: $('filter-end')?.value || today(), search: $('filter-search')?.value || '', status: $('filter-status')?.value || '' });
@@ -65,6 +70,7 @@
       render();
       window.MercadoBridge.metric('ready', performance.now() - started);
     } catch (error) { if (sequence !== state.sequence) return; $('module-error').textContent = error.message; $('module-error').hidden = false; $('module-count').textContent = 'Não foi possível carregar'; }
+    finally { if (sequence === state.sequence) state.loading = false; }
   }
   function action(label, operation, fields, item = {}, options = {}) { return button(label, () => openForm(label, operation, fields, item, options), options.primary, options.danger); }
   const field = (key, label, type = 'text', required = false, extra = {}) => ({ key, label, type, required, ...extra });
@@ -117,11 +123,24 @@
     state.tab = selectedTab; state.rows = rows; renderTabs(tabs); renderTable(columns,rows); renderRowActions();
   }
   function metric(label,value) { const card=element('div','module-metric'); card.append(element('span','',label),element('strong','',String(value))); $('module-metrics').append(card); }
-  function renderTabs(tabs) { const host=$('module-tabs'); host.replaceChildren(); tabs.forEach(([id,label])=>{const b=element('button',id===state.tab?'active':'',label);b.type='button';b.addEventListener('click',()=>{if(state.tab===id)return;state.tab=id;state.selected=null;load();});host.append(b);}); }
+  function renderTabs(tabs) { const host=$('module-tabs'); host.replaceChildren(); tabs.forEach(([id,label])=>{const b=element('button',id===state.tab?'active':'',label);b.type='button';b.addEventListener('click',()=>{if(state.tab===id)return;clearTimeout(state.searchTimer);state.searchTimer=null;state.tab=id;state.selected=null;const loadedLocally=!state.loading&&((state.module==='suppliers'&&Array.isArray(state.data.suppliers)&&Array.isArray(state.data.categories))||(state.module==='stock'&&id==='products'&&Array.isArray(state.data.products)));if(loadedLocally)render();else load();});host.append(b);}); }
   function renderTable(columns,rows) {
-    const header=element('tr'); columns.forEach(([,label])=>header.append(element('th','',label))); $('module-head').replaceChildren(header); const body=$('module-rows'); body.replaceChildren();
-    rows.forEach((item,index)=>{const tr=element('tr');tr.tabIndex=0;columns.forEach(([key,,format])=>{const raw=item[key];tr.append(element('td','',format?format(raw):raw===null||raw===undefined||raw===''?'—':String(raw)));});tr.addEventListener('click',()=>{state.selected=index;body.querySelectorAll('tr').forEach((r,i)=>r.classList.toggle('selected',i===index));renderRowActions();});tr.addEventListener('keydown',e=>{if(e.key==='Enter')tr.click();});body.append(tr);});
-    $('module-count').textContent=`${rows.length} registro${rows.length===1?'':'s'}`; $('module-empty').hidden=rows.length>0;
+    const header=element('tr'); columns.forEach(([,label])=>header.append(element('th','',label))); $('module-head').replaceChildren(header);
+    state.columns=columns; state.rows=rows; state.selected=null; state.selectedRow=null; state.displayedRows=0;
+    $('module-rows').replaceChildren(); $('module-empty').hidden=rows.length>0; appendTableRows();
+  }
+  function appendTableRows() {
+    const rows=state.rows, columns=state.columns, body=$('module-rows'), end=Math.min(rows.length,state.displayedRows+tablePageSize), fragment=document.createDocumentFragment();
+    for(let index=state.displayedRows;index<end;index++){
+      const item=rows[index],tr=element('tr');tr.tabIndex=0;
+      columns.forEach(([key,,format])=>{const raw=item[key];tr.append(element('td','',format?format(raw):raw===null||raw===undefined||raw===''?'—':String(raw)));});
+      tr.addEventListener('click',()=>{state.selectedRow?.classList.remove('selected');state.selected=index;state.selectedRow=tr;tr.classList.add('selected');renderRowActions();});
+      tr.addEventListener('keydown',e=>{if(e.key==='Enter')tr.click();});fragment.append(tr);
+    }
+    body.append(fragment);state.displayedRows=end;
+    $('module-count').textContent=end<rows.length?`${end.toLocaleString('pt-BR')} de ${rows.length.toLocaleString('pt-BR')} registros`:`${rows.length.toLocaleString('pt-BR')} registro${rows.length===1?'':'s'}`;
+    $('module-load-more').hidden=end>=rows.length;
+    if(end<rows.length)$('module-load-more-button').textContent=`Mostrar mais ${Math.min(tablePageSize,rows.length-end).toLocaleString('pt-BR')} registros`;
   }
   function expenseFields() { return [field('description','Descrição','text',true),field('category','Categoria'),money('amount','Valor'),field('date','Data','date',true),field('payment','Forma de pagamento','select',true,{options:[['DINHEIRO','Dinheiro'],['PIX','Pix'],['DÉBITO','Débito'],['CRÉDITO','Crédito']]}),field('note','Observação','textarea')]; }
   function supplierFields() { return [field('name','Nome','text',true),field('document','Documento'),field('phone','Telefone'),field('email','E-mail','email'),field('address','Endereço','text',false,{wide:true}),field('note','Observação','textarea',false,{wide:true})]; }
@@ -139,13 +158,14 @@
   function openForm(title,operation,fields,item={},options={}){
     formOperation=operation;formItem=item;formOptions=options;$('dialog-title').textContent=title;$('dialog-error').textContent='';const host=$('dialog-fields');host.replaceChildren();
     fields.forEach(spec=>{const wrapper=element('label',spec.wide?'wide':'');wrapper.append(element('span','',spec.label));let input;if(spec.type==='textarea')input=element('textarea');else if(spec.type==='select'){input=element('select');(spec.options||[]).forEach(([value,label])=>{const opt=element('option','',label);opt.value=value;input.append(opt);});}else{input=element('input');input.type=spec.type;}
-      input.name=spec.key;input.required=Boolean(spec.required);if(spec.step)input.step=spec.step;if(spec.min)input.min=spec.min;if(spec.type==='checkbox'){input.checked=Boolean(item[spec.key]);}else if(item[spec.key]!==undefined&&item[spec.key]!==null)input.value=String(item[spec.key]);else if(spec.key==='date')input.value=today();wrapper.append(input);host.append(wrapper);});$('module-dialog').showModal();host.querySelector('input,select,textarea')?.focus();
+      input.name=spec.key;input.required=Boolean(spec.required);if(spec.key==='login')input.dataset.preserveCase='true';if(spec.step)input.step=spec.step;if(spec.min)input.min=spec.min;if(spec.type==='checkbox'){input.checked=Boolean(item[spec.key]);}else if(item[spec.key]!==undefined&&item[spec.key]!==null)input.value=String(item[spec.key]);else if(spec.key==='date')input.value=today();wrapper.append(input);host.append(wrapper);});$('module-dialog').showModal();host.querySelector('input,select,textarea')?.focus();
   }
   $('module-form').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;if(!form.reportValidity())return;if(formOptions.confirm&&!confirm(formOptions.confirm))return;const payload={operation:formOperation,...formItem};for(const input of form.elements){if(!input.name)continue;if(input.type==='checkbox')payload[input.name]=input.checked;else if(input.type==='number')payload[input.name]=input.value===''?null:Number(input.value);else if(input.type==='select-one'&&['productId','supplierId'].includes(input.name))payload[input.name]=input.value===''?null:Number(input.value);else payload[input.name]=input.value;}
     $('dialog-submit').disabled=true;$('dialog-error').textContent='';try{const result=await request('management.execute',payload);$('module-dialog').close();notify($('toast-region'),result.closed?`Caixa fechado. Diferença: ${currency(result.closed.diferenca)}`:'Alteração salva.');load();}catch(error){$('dialog-error').textContent=error.message;}finally{$('dialog-submit').disabled=false;}
   });
   async function showDetails(module,id){try{const result=await request('management.details',{module,id});$('details-title').textContent=module==='sales'?`Venda #${id}`:`Caixa #${id}`;const host=$('details-content');host.replaceChildren();if(module==='sales'&&result.totals){const totals=element('p','',`Subtotal: ${currency(result.totals.subtotal)} · Total: ${currency(result.totals.total)}`);host.append(totals);}const table=element('table'),head=element('tr'),body=element('tbody');const columns=module==='sales'?[['produto','Produto'],['quantidade','Quantidade'],['precoUnitario','Preço'],['subtotal','Subtotal']]:[['data','Data'],['tipo','Movimento'],['valor','Valor'],['observacao','Descrição']];columns.forEach(([,title])=>head.append(element('th','',title)));table.append(head);(result.rows||[]).forEach(row=>{const tr=element('tr');columns.forEach(([key])=>tr.append(element('td','',String(row[key]??'—'))));body.append(tr);});table.append(body);host.append(table);$('details-dialog').showModal();}catch(e){alertError(e);}}
   $('dialog-close').onclick=$('dialog-cancel').onclick=()=>$('module-dialog').close();$('details-close').onclick=$('details-done').onclick=()=>$('details-dialog').close();
+  $('module-load-more-button').addEventListener('click',appendTableRows);
   document.addEventListener('keydown',e=>{if(e.key==='F2'&&!e.altKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();location.assign('./index.html');}});
   window.addEventListener('popstate',()=>navigate(new URLSearchParams(location.search).get('module'),false));window.addEventListener('mercado:refresh',load);
   buildNavigation();navigate(new URLSearchParams(location.search).get('module'),false);

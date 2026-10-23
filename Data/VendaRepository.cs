@@ -129,6 +129,18 @@ internal sealed class VendaRepository
             .Select(r => new VendaHistoricoLinha { Id=Convert.ToInt64(r["Id"]), Data=DateTime.Parse(Convert.ToString(r["Data"])!, System.Globalization.CultureInfo.InvariantCulture), Operador=Convert.ToString(r["Operador"])!, Pagamento=Convert.ToString(r["Pagamento"])!, Total=Convert.ToDecimal(r["Total"], System.Globalization.CultureInfo.InvariantCulture), Subtotal=Convert.ToDecimal(r["Subtotal"], System.Globalization.CultureInfo.InvariantCulture), Desconto=Convert.ToDecimal(r["Desconto"], System.Globalization.CultureInfo.InvariantCulture), Acrescimo=Convert.ToDecimal(r["Acrescimo"], System.Globalization.CultureInfo.InvariantCulture), Status=Convert.ToString(r["Status"])! }).ToList();
     }
 
+    public VendaOperacao? ObterPorOperacao(string operacaoId, int usuarioId)
+    {
+        using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
+        var row = db.Query("SELECT Id,Status,ValorTotal,FormaPagamento,ValorRecebido,Troco FROM Vendas WHERE OperacaoId=@Operacao AND UsuarioId=@Usuario LIMIT 1;",
+            new Dictionary<string, object?> { ["@Operacao"] = operacaoId, ["@Usuario"] = usuarioId }).FirstOrDefault();
+        if (row is null) return null;
+        decimal Value(string name) => Convert.ToDecimal(row[name], System.Globalization.CultureInfo.InvariantCulture);
+        return new VendaOperacao(Convert.ToInt64(row["Id"], System.Globalization.CultureInfo.InvariantCulture),
+            Convert.ToString(row["Status"]) ?? "", Value("ValorTotal"), Convert.ToString(row["FormaPagamento"]) ?? "",
+            Value("ValorRecebido"), Value("Troco"));
+    }
+
     public TotaisVenda ObterTotais(long vendaId)
     {
         using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);

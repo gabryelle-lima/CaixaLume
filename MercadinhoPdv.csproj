@@ -6,8 +6,10 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>CaixaLume</AssemblyName>
+    <Product>CaixaLume</Product>
     <ApplicationIcon>Assets\mercado.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

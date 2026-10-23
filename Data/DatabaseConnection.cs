@@ -25,6 +25,9 @@ internal sealed class DatabaseConnection : IDisposable
         }
         try
         {
+            // A interface pode consultar e gravar em conexões diferentes ao mesmo tempo.
+            // Aguarde a transação em curso antes de declarar o banco ocupado.
+            Execute("PRAGMA busy_timeout = 5000;");
             Execute("PRAGMA foreign_keys = ON;");
             if (Convert.ToInt64(Query("PRAGMA foreign_keys;").Single().Values.Single()) != 1)
                 throw new InvalidOperationException("A integridade referencial do SQLite não pôde ser habilitada.");
