@@ -9,7 +9,7 @@
     <AssemblyName>CaixaLume</AssemblyName>
     <Product>CaixaLume</Product>
     <ApplicationIcon>Assets\mercado.ico</ApplicationIcon>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

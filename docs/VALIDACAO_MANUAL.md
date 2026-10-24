@@ -24,4 +24,4 @@ Este roteiro deve ser executado na máquina do piloto com o banco isolado criado
 12. Conferir telas em 1024×768, 1366×768 e 1920×1080, com escalas de 100%, 125% e 150% usadas na loja: textos, tabelas, modais, rolagem e botões não devem ficar cortados.
 13. Se houver leitor de código, balança ou impressora no local, verificar cada equipamento. Consultar Open Food Facts com `3017620425035`, com código inexistente e offline; os dados digitados devem permanecer, com cadastro manual disponível.
 
-Registre qualquer falha com horário, versão, tela, passos e resultado esperado. O log de diagnóstico fica em `%LOCALAPPDATA%\MercadinhoPdv\logs\application.log`. Evite compartilhar senhas ou dados de clientes. Os critérios de liberação constam em [PILOTO_0.1.2.md](PILOTO_0.1.2.md).
+Registre qualquer falha com horário, versão, tela, passos e resultado esperado. O log de diagnóstico fica em `%LOCALAPPDATA%\MercadinhoPdv\logs\application.log`. Evite compartilhar senhas ou dados de clientes. Os critérios de liberação constam em [PILOTO_0.1.3.md](PILOTO_0.1.3.md).

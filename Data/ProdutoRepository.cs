@@ -26,6 +26,35 @@ internal sealed class ProdutoRepository
         return database.Query(sql, parameters).Select(ToProduto).ToList();
     }
 
+    public Dictionary<int, Produto> BuscarParaVenda(IReadOnlyCollection<int> productIds)
+    {
+        int[] ids = productIds.Distinct().ToArray();
+        if (ids.Length == 0) return new Dictionary<int, Produto>();
+        if (ids.Length > 250) throw new InvalidOperationException("A venda excede o limite de 250 produtos.");
+
+        var parameters = new Dictionary<string, object?>(ids.Length);
+        var placeholders = new string[ids.Length];
+        for (int index = 0; index < ids.Length; index++)
+        {
+            string name = $"@Id{index}";
+            placeholders[index] = name;
+            parameters[name] = ids[index];
+        }
+
+        using var database = new DatabaseConnection(DatabaseInitializer.DatabasePath);
+        string sql = $"SELECT Id, Nome, CodigoBarras, PrecoVenda, UnidadeMedida, EstoqueAtual, Ativo FROM Produtos WHERE ExcluidoEm IS NULL AND Id IN ({string.Join(",", placeholders)});";
+        return database.Query(sql, parameters).Select(row => new Produto
+        {
+            Id = ToInt(row["Id"]),
+            Nome = ToText(row["Nome"]),
+            CodigoBarras = ToNullableText(row["CodigoBarras"]),
+            PrecoVenda = ToDecimal(row["PrecoVenda"]),
+            UnidadeMedida = ToNullableText(row["UnidadeMedida"]) ?? "UN",
+            EstoqueAtual = ToDecimal(row["EstoqueAtual"]),
+            Ativo = ToInt(row["Ativo"]) == 1
+        }).ToDictionary(product => product.Id);
+    }
+
     public Produto? BuscarPorId(int id)
     {
         const string sql = "SELECT Id, CodigoBarras, Nome, Marca, ImagemUrl, LocalImagePath, CategoriaId, FornecedorId, PrecoCusto, PrecoVenda, UnidadeMedida, EstoqueAtual, EstoqueMinimo, DataValidade, Ativo FROM Produtos WHERE Id = @Id AND ExcluidoEm IS NULL;";

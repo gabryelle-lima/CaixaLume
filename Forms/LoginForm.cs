@@ -10,7 +10,8 @@ internal sealed class LoginForm : Form
     private readonly TextBox _login = new() { Dock = DockStyle.Fill };
     private readonly TextBox _password = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
     private readonly TextBox _confirmPassword = new() { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
-    private readonly Label _heading = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 17, FontStyle.Bold) };
+    private readonly Label _heading = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 22, FontStyle.Bold) };
+    private readonly Label _context = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = UiTheme.Accent };
     private readonly Label _message = new() { Dock = DockStyle.Fill, AutoSize = false, TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.FromArgb(248, 113, 113) };
     private readonly Button _submit = new() { Dock = DockStyle.Fill, Height = 44 };
     private readonly CheckBox _showPassword = new() { Text = "Mostrar senhas", AutoSize = true, Anchor = AnchorStyles.Left };
@@ -21,7 +22,7 @@ internal sealed class LoginForm : Form
     {
         using (var db = new Data.DatabaseConnection(Data.DatabaseInitializer.DatabasePath))
             _storeName = Convert.ToString(db.Query("SELECT Valor FROM Configuracoes WHERE Chave='NomeLoja';").FirstOrDefault()?.GetValueOrDefault("Valor")) is { Length: > 0 } name ? name.Trim() : "Mercado";
-        Text = $"Acesso · {_storeName} PDV";
+        Text = $"CaixaLume · {_storeName}";
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox = false;
@@ -41,6 +42,10 @@ internal sealed class LoginForm : Form
         Shown += (_, _) => (_setup ? _name : _login).Focus();
         BuildLayout();
         UiTheme.Apply(this);
+        _submit.BackColor = UiTheme.Accent;
+        _submit.ForeColor = Color.FromArgb(4, 37, 27);
+        _submit.FlatAppearance.BorderSize = 0;
+        _submit.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
     }
 
     private void BuildLayout()
@@ -69,12 +74,14 @@ internal sealed class LoginForm : Form
             BackColor = UiTheme.Surface,
         };
         card.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        _heading.Text = _setup ? "CONFIGURAR ADMINISTRADOR" : $"{_storeName.ToUpperInvariant()} · PDV";
-        _submit.Text = _setup ? "CRIAR ADMINISTRADOR" : "ENTRAR";
+        _heading.Text = "CaixaLume";
+        _context.Text = _setup ? $"PRIMEIRO ACESSO · LOJA {_storeName.ToUpperInvariant()}" : $"ACESSO À LOJA {_storeName.ToUpperInvariant()}";
+        _submit.Text = _setup ? "CADASTRAR ADMINISTRADOR" : "ENTRAR";
         _message.Text = _setup ? "Crie a conta que terá acesso de administrador." : "Entre com seu login e senha.";
         _message.ForeColor = UiTheme.Muted;
 
         AddRow(card, _heading, 64);
+        AddRow(card, _context, 28);
         if (_setup) AddField(card, "Nome", _name);
         AddField(card, "Login", _login);
         AddField(card, "Senha", _password);
@@ -128,9 +135,9 @@ internal sealed class LoginForm : Form
                 _name.Clear();
                 _password.Clear();
                 _confirmPassword.Clear();
-                _message.Text = "ADMINISTRADOR CRIADO COM SUCESSO. Agora entre com seu login e senha.";
-                _message.ForeColor = UiTheme.Accent;
                 BuildLayout();
+                _message.Text = "Administrador criado. Entre com seu login e senha.";
+                _message.ForeColor = UiTheme.Accent;
                 _login.Focus();
                 return;
             }

@@ -47,8 +47,8 @@ internal sealed class AppWebViewForm : Form
     {
         _environment = environment;
         Text = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE"))
-            ? "Mercado · Gestão"
-            : "AMBIENTE DE TESTE  |  Mercado · Gestão";
+            ? "CaixaLume · Mercado"
+            : "AMBIENTE DE TESTE  |  CaixaLume · Mercado";
         WindowState = FormWindowState.Maximized;
         MinimumSize = new Size(900, 600);
         BackColor = Color.FromArgb(11, 17, 23);
@@ -72,7 +72,7 @@ internal sealed class AppWebViewForm : Form
             _startupWatch.Start();
             _startupTimeout.Start();
             string webRoot = Path.Combine(AppContext.BaseDirectory, "Web");
-            foreach (string asset in new[] { "home.html", "index.html", "products.html", "reports.html", "modules.html", "home.js", "app.js", "products.js", "reports.js", "modules.js", "bridge.js", "ui.js", "pdv-domain.js", "home.css", "products.css", "reports.css", "modules.css", "styles.css" })
+            foreach (string asset in new[] { "shell.html", "shell.js", "shell.css", "home.html", "index.html", "products.html", "reports.html", "modules.html", "home.js", "app.js", "products.js", "reports.js", "modules.js", "bridge.js", "ui.js", "pdv-domain.js", "home.css", "products.css", "reports.css", "modules.css", "styles.css" })
                 if (!File.Exists(Path.Combine(webRoot, asset))) throw new FileNotFoundException($"Arquivo da interface local ausente: {asset}.");
             await _browser.EnsureCoreWebView2Async(await _environment);
             if (_fallbackRequested || IsDisposed) return;
@@ -86,7 +86,7 @@ internal sealed class AppWebViewForm : Form
             core.SetVirtualHostNameToFolderMapping(VirtualHost, webRoot, CoreWebView2HostResourceAccessKind.DenyCors);
             core.NavigationStarting += (_, args) =>
             {
-                if (!IsLocalPage(args.Uri))
+                if (!IsShellPage(args.Uri))
                 {
                     args.Cancel = true;
                     if (_blockedNavigationIds.Count > 128) _blockedNavigationIds.Clear();
@@ -100,13 +100,6 @@ internal sealed class AppWebViewForm : Form
                 if (_blockedNavigationIds.Remove(args.NavigationId)) return;
                 if (args.IsSuccess)
                 {
-                    if (_startupReady) return;
-                    _startupReady = true;
-                    _startupTimeout.Stop();
-                    _startupWatch.Stop();
-                    _loading.Visible = false;
-                    if (_startupWatch.ElapsedMilliseconds > 750)
-                        Diagnostics.AppLogger.Slow("Inicialização da interface", _startupWatch.ElapsedMilliseconds);
                     return;
                 }
                 Diagnostics.AppLogger.Error(
@@ -114,7 +107,7 @@ internal sealed class AppWebViewForm : Form
                     "Carregar interface WebView2");
                 if (!_startupReady && _startupNavigationRetries++ == 0)
                 {
-                    core.Navigate($"https://{VirtualHost}/home.html");
+                    core.Navigate($"https://{VirtualHost}/shell.html");
                     return;
                 }
                 Fallback($"A página local da interface não pôde ser carregada ({args.WebErrorStatus}).");
@@ -128,7 +121,7 @@ internal sealed class AppWebViewForm : Form
                     Fallback("O processo principal da interface foi encerrado.");
             };
             core.WebMessageReceived += HandleWebMessage;
-            core.Navigate($"https://{VirtualHost}/home.html");
+            core.Navigate($"https://{VirtualHost}/shell.html");
         }
         catch (Exception exception)
         {
@@ -141,7 +134,7 @@ internal sealed class AppWebViewForm : Form
     {
         try
         {
-            if (!IsLocalPage(e.Source)) return;
+            if (!IsShellPage(e.Source)) return;
             string json = e.WebMessageAsJson;
             var operationWatch = Stopwatch.StartNew();
             string id = "";
@@ -169,7 +162,21 @@ internal sealed class AppWebViewForm : Form
                 }
                 if (_sessionEnding && action != "diagnostics.performance")
                     throw new InvalidOperationException("A sessão está sendo encerrada. Entre novamente para continuar.");
-                if (action == "diagnostics.performance")
+                if (action == "shell.ready")
+                {
+                    ValidateEnvelope(root, id);
+                    if (!_startupReady)
+                    {
+                        _startupReady = true;
+                        _startupTimeout.Stop();
+                        _startupWatch.Stop();
+                        _loading.Visible = false;
+                        if (_startupWatch.ElapsedMilliseconds > 750)
+                            Diagnostics.AppLogger.Slow("Inicialização da interface", _startupWatch.ElapsedMilliseconds);
+                    }
+                    response = new { version = 1, id, ok = true, data = new { ready = true } };
+                }
+                else if (action == "diagnostics.performance")
                 {
                     ValidateEnvelope(root, id);
                     JsonElement metric = root.GetProperty("payload");
@@ -418,6 +425,10 @@ internal sealed class AppWebViewForm : Form
         uri.Scheme == Uri.UriSchemeHttps && uri.Port == 443 && uri.UserInfo.Length == 0 &&
         uri.Host.Equals(VirtualHost, StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsShellPage(string address) =>
+        IsLocalPage(address) && Uri.TryCreate(address, UriKind.Absolute, out Uri? uri) &&
+        uri.AbsolutePath.Equals("/shell.html", StringComparison.OrdinalIgnoreCase);
+
     private async Task EnterRegularOperationAsync()
     {
         // A restauração segura a catraca enquanto aguarda todas as ações ativas.
@@ -560,6 +571,9 @@ internal sealed class AppWebViewForm : Form
     private static object GetDashboardData()
     {
         var summary = new DashboardService().ObterResumo();
+        using var db = new Data.DatabaseConnection(Data.DatabaseInitializer.DatabasePath);
+        int productCount = Convert.ToInt32(db.Query("SELECT COUNT(*) AS Total FROM Produtos WHERE Ativo=1 AND ExcluidoEm IS NULL;").Single()["Total"], CultureInfo.InvariantCulture);
+        int totalSales = Convert.ToInt32(db.Query("SELECT COUNT(*) AS Total FROM Vendas WHERE Status='Concluida';").Single()["Total"], CultureInfo.InvariantCulture);
         return new
         {
             storeName = summary.NomeLoja,
@@ -570,6 +584,8 @@ internal sealed class AppWebViewForm : Form
             averageTicket = summary.TicketMedio,
             lowStockCount = summary.ItensEstoqueBaixo,
             cashOpen = summary.CaixaAberto,
+            productCount,
+            totalSales,
             recentSales = summary.VendasRecentes.Select(sale => new { id = sale.Id, date = sale.Data, operatorName = sale.Operador, payment = sale.Pagamento, total = sale.Total }),
             lowStock = summary.ProdutosEstoqueBaixo.Select(product => new { product = product.Produto, unit = product.Unidade, stock = product.Estoque, minimum = product.Minimo }),
             expired = summary.ProdutosVencidos.Select(product => new { product = product.Produto, expiry = product.Validade, days = product.Dias }),

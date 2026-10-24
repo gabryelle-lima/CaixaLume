@@ -1,14 +1,26 @@
 (() => {
   const pending = new Map();
+  const channel = 'caixalume:shell:v1';
+  const embedded = window.parent !== window;
+
+  function send(message) {
+    if (embedded) window.parent.postMessage({ channel, kind: 'request', message }, location.origin);
+    else window.chrome?.webview?.postMessage(message);
+  }
+
+  function navigate(target) {
+    if (embedded) window.parent.postMessage({ channel, kind: 'navigate', target }, location.origin);
+    else window.location.assign(`./${target}`);
+  }
 
   function metric(phase, milliseconds) {
     const page = location.pathname.split('/').pop()?.replace('.html', '');
     if (!['home', 'index', 'products', 'reports', 'modules'].includes(page) || !Number.isFinite(milliseconds)) return;
-    window.chrome?.webview?.postMessage({ version: 1, id: crypto.randomUUID(), action: 'diagnostics.performance', payload: { page, phase, milliseconds: Math.max(0, Math.min(120000, Math.round(milliseconds))) } });
+    send({ version: 1, id: crypto.randomUUID(), action: 'diagnostics.performance', payload: { page, phase, milliseconds: Math.max(0, Math.min(120000, Math.round(milliseconds))) } });
   }
 
   function request(action, payload = {}) {
-    if (!window.chrome?.webview) return Promise.reject(new Error('A ponte com o aplicativo não está disponível.'));
+    if (!embedded && !window.chrome?.webview) return Promise.reject(new Error('A ponte com o aplicativo não está disponível.'));
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
       const transactional = action === 'pdv.checkout' || action === 'pdv.openCash';
@@ -23,12 +35,11 @@
         const error = new Error(message); error.code = transactional ? 'UNKNOWN_OUTCOME' : 'TIMEOUT'; reject(error);
       }, timeoutMs);
       pending.set(id, { resolve, reject, timeout, started: performance.now(), action });
-      window.chrome.webview.postMessage({ version: 1, id, action, payload });
+      send({ version: 1, id, action, payload });
     });
   }
 
-  window.chrome?.webview?.addEventListener('message', event => {
-    const message = event.data;
+  function receive(message) {
     if (!message || message.version !== 1 || typeof message.id !== 'string') return;
     const current = pending.get(message.id);
     if (!current) return;
@@ -36,12 +47,20 @@
     if (current.action.endsWith('.getData')) metric('data', performance.now() - current.started);
     if (message.ok) current.resolve(message.data);
     else { const error = new Error(typeof message.error === 'string' ? message.error : 'A operação não foi concluída.'); error.code = 'REJECTED'; current.reject(error); }
-  });
+  }
+
+  if (embedded) {
+    window.addEventListener('message', event => {
+      if (event.source !== window.parent || event.origin !== location.origin || event.data?.channel !== channel) return;
+      if (event.data.kind === 'response') receive(event.data.message);
+      else if (event.data.kind === 'activate') window.dispatchEvent(new CustomEvent('mercado:activate', { detail: { target: event.data.target, first: Boolean(event.data.first), dirty: Boolean(event.data.dirty) } }));
+    });
+  } else window.chrome?.webview?.addEventListener('message', event => receive(event.data));
 
   window.addEventListener('load', () => requestAnimationFrame(() => {
     const entry = performance.getEntriesByType('navigation')[0];
     if (entry) metric('navigation', entry.duration || performance.now());
   }));
 
-  window.MercadoBridge = Object.freeze({ request, metric });
+  window.MercadoBridge = Object.freeze({ request, metric, navigate });
 })();

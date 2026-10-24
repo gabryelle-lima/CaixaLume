@@ -30,6 +30,27 @@
     });
   }
 
+  function showGettingStarted(data) {
+    const totalSales = Number(data.totalSales || 0);
+    const section = document.getElementById('getting-started');
+    section.hidden = totalSales > 0;
+    if (section.hidden) return;
+
+    const completed = [Number(data.productCount || 0) > 0, Boolean(data.cashOpen), false];
+    const current = completed.indexOf(false);
+    ['products', 'cash', 'sale'].forEach((name, index) => {
+      const step = document.getElementById(`setup-step-${name}`);
+      const done = completed[index];
+      step.classList.toggle('done', done);
+      step.classList.toggle('current', index === current);
+      const label = step.querySelector('.setup-step-state');
+      label.textContent = done ? 'Concluído' : index === current ? 'Próximo passo' : 'Pendente';
+      label.setAttribute('aria-label', label.textContent);
+    });
+    document.getElementById('getting-started-progress').textContent =
+      `${completed.filter(Boolean).length} de 3 concluídos`;
+  }
+
   function renderAlerts(targetId, emptyId, items, makeDetail) {
     const host = document.getElementById(targetId); host.replaceChildren();
     document.getElementById(emptyId).hidden = items.length > 0;
@@ -60,6 +81,7 @@
       document.getElementById('average-ticket').textContent = currency(data.averageTicket);
       document.getElementById('low-stock-count').textContent = String(data.lowStockCount ?? 0);
       setCash(Boolean(data.cashOpen));
+      showGettingStarted(data);
       showRecentSales(data.recentSales || []);
       renderAlerts('expired-alerts', 'expired-empty', data.expired || [], item => 'Vencido há ' + Math.abs(item.days) + ' dia(s) · ' + new Date(item.expiry).toLocaleDateString('pt-BR'));
       renderAlerts('stock-alerts', 'stock-empty', data.lowStock || [], item => `${item.stock.toLocaleString('pt-BR')} ${item.unit} · mín. ${item.minimum.toLocaleString('pt-BR')}`);
@@ -72,7 +94,7 @@
     }
   }
 
-  function navigatePage(page) { window.location.href = `./${page}`; }
+  function navigatePage(page) { window.MercadoBridge.navigate(page); }
   function openModule(module) { navigatePage(`modules.html?module=${encodeURIComponent(module)}`); }
 
   document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => navigatePage(button.dataset.page)));
@@ -84,5 +106,6 @@
   document.getElementById('retry-dashboard').addEventListener('click', loadDashboard);
   document.addEventListener('keydown', event => { if (event.key === 'F2' && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); navigatePage('index.html'); } });
   window.addEventListener('mercado:refresh', loadDashboard);
+  window.addEventListener('mercado:activate', event => { if (event.detail.dirty) loadDashboard(); });
   loadDashboard();
 })();

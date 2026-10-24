@@ -19,7 +19,7 @@
       const b = element('button', 'nav-item'); b.type = 'button'; b.dataset.target = target;
       b.append(element('span', 'nav-icon', icon), element('span', '', label));
       if (target === 'index.html') b.append(element('kbd', '', 'F2'));
-      b.addEventListener('click', () => target.endsWith('.html') ? location.assign(`./${target}`) : navigate(target));
+      b.addEventListener('click', () => target.endsWith('.html') ? window.MercadoBridge.navigate(target) : navigate(target));
       $(index < 6 ? 'primary-nav' : 'secondary-nav').append(b);
     });
     const logout = element('button', 'nav-item'); logout.type = 'button'; logout.append(element('span', 'nav-icon', '⇥'), element('span', '', 'Sair'));
@@ -86,7 +86,7 @@
       rows = selectedTab === 'products' ? products.filter(p => (!search || `${p.nome} ${p.codigoBarras || ''}`.toLocaleUpperCase('pt-BR').includes(search)) && (!$('filter-stock-unit')?.value || p.unidadeMedida === $('filter-stock-unit').value) && (!$('filter-stock-status')?.value || ($('filter-stock-status').value === 'low') === (Number(p.estoqueAtual) <= Number(p.estoqueMinimo)))) : d.movements || [];
       columns = selectedTab === 'products' ? [['codigoBarras','CÓDIGO'],['nome','PRODUTO'],['categoriaNome','CATEGORIA'],['unidadeMedida','UNID.'],['estoqueAtual','SALDO',num],['estoqueMinimo','MÍNIMO',num],['dataValidade','VALIDADE',v => v ? new Date(v).toLocaleDateString('pt-BR') : '—']] : [['data','DATA',date],['produto','PRODUTO'],['tipo','TIPO'],['quantidade','QUANTIDADE',num],['motivo','MOTIVO'],['usuario','USUÁRIO']];
       if (state.role === 'ADMINISTRADOR') { actions.append(action('＋ Movimentar', 'stock.move', [productField(),field('type','Tipo','select',true,{options:[['Entrada','Entrada'],['Saída','Saída'],['Ajustar saldo','Ajustar saldo']]}),quantity('quantity','Quantidade ou novo saldo'),field('reason','Motivo','textarea',true)], {}, { primary:true })); actions.append(action('Receber mercadoria','stock.receive',[productField(),quantity('quantity','Quantidade'),money('cost','Custo unitário'),money('price','Novo preço de venda',false),field('expiry','Validade','date'),field('supplierId','Fornecedor','select',false,{options:[['','Não informado'],...(d.suppliers||[]).map(s=>[s.id,s.nome])]}),field('document','Documento'),field('note','Observação','textarea')])); }
-      if (state.role === 'ADMINISTRADOR' && /^\d{8,14}$/.test(search) && !products.some(p=>p.codigoBarras===search)) actions.append(button('Cadastrar este código',()=>location.assign(`./products.html?barcode=${encodeURIComponent(search)}`)));
+      if (state.role === 'ADMINISTRADOR' && /^\d{8,14}$/.test(search) && !products.some(p=>p.codigoBarras===search)) actions.append(button('Cadastrar este código',()=>window.MercadoBridge.navigate(`products.html?barcode=${encodeURIComponent(search)}`)));
       metric('Produtos ativos', products.length); metric('Estoque baixo', products.filter(p => Number(p.estoqueAtual) <= Number(p.estoqueMinimo)).length);
     } else if (m === 'cash') {
       tabs = [['movements','Movimentações'],['history','Histórico de caixas']]; selectedTab ||= 'movements'; const c = d.current;
@@ -166,7 +166,13 @@
   async function showDetails(module,id){try{const result=await request('management.details',{module,id});$('details-title').textContent=module==='sales'?`Venda #${id}`:`Caixa #${id}`;const host=$('details-content');host.replaceChildren();if(module==='sales'&&result.totals){const totals=element('p','',`Subtotal: ${currency(result.totals.subtotal)} · Total: ${currency(result.totals.total)}`);host.append(totals);}const table=element('table'),head=element('tr'),body=element('tbody');const columns=module==='sales'?[['produto','Produto'],['quantidade','Quantidade'],['precoUnitario','Preço'],['subtotal','Subtotal']]:[['data','Data'],['tipo','Movimento'],['valor','Valor'],['observacao','Descrição']];columns.forEach(([,title])=>head.append(element('th','',title)));table.append(head);(result.rows||[]).forEach(row=>{const tr=element('tr');columns.forEach(([key])=>tr.append(element('td','',String(row[key]??'—'))));body.append(tr);});table.append(body);host.append(table);$('details-dialog').showModal();}catch(e){alertError(e);}}
   $('dialog-close').onclick=$('dialog-cancel').onclick=()=>$('module-dialog').close();$('details-close').onclick=$('details-done').onclick=()=>$('details-dialog').close();
   $('module-load-more-button').addEventListener('click',appendTableRows);
-  document.addEventListener('keydown',e=>{if(e.key==='F2'&&!e.altKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();location.assign('./index.html');}});
+  document.addEventListener('keydown',e=>{if(e.key==='F2'&&!e.altKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();window.MercadoBridge.navigate('index.html');}});
   window.addEventListener('popstate',()=>navigate(new URLSearchParams(location.search).get('module'),false));window.addEventListener('mercado:refresh',load);
+  window.addEventListener('mercado:activate', event => {
+    if (event.detail.first || document.querySelector('dialog[open]')) return;
+    const module = new URL(event.detail.target, location.href).searchParams.get('module');
+    if (module && module !== state.module) navigate(module);
+    else if (event.detail.dirty) load();
+  });
   buildNavigation();navigate(new URLSearchParams(location.search).get('module'),false);
 })();

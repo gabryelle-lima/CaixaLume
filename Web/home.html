@@ -11,7 +11,7 @@
   <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Navegação principal">
-        <div class="brand"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-copy"><strong id="store-name">Mercado</strong><small>GESTÃO DE LOJA</small></span></div>
+        <div class="brand"><span class="brand-mark" aria-hidden="true">C</span><span class="brand-copy"><strong>CaixaLume</strong><small>LOJA <span id="store-name">Mercado</span></small></span></div>
         <div class="nav-caption">OPERAÇÃO</div>
         <nav class="primary-nav">
           <button class="nav-item active" data-page="home.html" type="button" aria-current="page"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
@@ -36,6 +36,14 @@
         <section class="dashboard-view">
           <div class="checkout-status" id="dashboard-error" role="alert" hidden><strong>Não foi possível carregar a visão geral</strong><span id="dashboard-error-text"></span><button class="button button-secondary" id="retry-dashboard" type="button">Tentar novamente</button></div>
           <div class="dashboard-heading"><div><div class="eyebrow" id="today-label">RESUMO DO NEGÓCIO</div><h1 id="greeting">Bem-vindo</h1><p>Veja o que está acontecendo na sua loja hoje.</p></div><div class="heading-actions"><span class="cash-pill" id="cash-status"><span></span> Verificando caixa...</span><button class="button button-primary open-pos" data-page="index.html" type="button"><span>＋</span> Abrir ponto de venda <span class="button-arrow">→</span></button></div></div>
+          <section class="getting-started" id="getting-started" aria-labelledby="getting-started-title" hidden>
+            <div class="getting-started-heading"><div><span class="eyebrow">COMECE POR AQUI</span><h2 id="getting-started-title">Prepare sua primeira venda</h2><p>Um caminho simples para deixar a loja pronta para operar.</p></div><span class="getting-started-progress" id="getting-started-progress">Primeiros passos</span></div>
+            <div class="getting-started-steps">
+              <article class="setup-step" id="setup-step-products" data-step="products"><span class="setup-step-number" aria-hidden="true">01</span><div class="setup-step-content"><h3>Cadastre seus produtos</h3><p>Informe nome, preço e estoque dos itens que você vende.</p><button class="setup-step-action" type="button" data-page="products.html">Ir para produtos <span aria-hidden="true">→</span></button></div><span class="setup-step-state" aria-label="Pendente">Pendente</span></article>
+              <article class="setup-step" id="setup-step-cash" data-step="cash"><span class="setup-step-number" aria-hidden="true">02</span><div class="setup-step-content"><h3>Abra o caixa</h3><p>Registre o saldo inicial antes de receber pagamentos.</p><button class="setup-step-action" type="button" data-module="cash">Ir para caixa <span aria-hidden="true">→</span></button></div><span class="setup-step-state" aria-label="Pendente">Pendente</span></article>
+              <article class="setup-step" id="setup-step-sale" data-step="sale"><span class="setup-step-number" aria-hidden="true">03</span><div class="setup-step-content"><h3>Faça sua primeira venda</h3><p>Leia o código de barras ou escolha um produto no catálogo.</p><button class="setup-step-action" type="button" data-page="index.html">Abrir ponto de venda <span aria-hidden="true">→</span></button></div><span class="setup-step-state" aria-label="Pendente">Pendente</span></article>
+            </div>
+          </section>
           <section class="metrics-grid" aria-label="Indicadores de hoje">
             <article class="metric-card"><div class="metric-label">FATURAMENTO DE HOJE <span>↗</span></div><strong id="revenue">—</strong><small>Vendas concluídas no dia</small></article>
             <article class="metric-card"><div class="metric-label">VENDAS <span>▦</span></div><strong id="sales-today">—</strong><small>Transações de hoje</small></article>

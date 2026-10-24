@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 param(
     [switch]$Reverter,
     [string]$Pacote = $PSScriptRoot
@@ -75,7 +75,7 @@ if (-not (Test-Path -LiteralPath $versionFile -PathType Leaf) -or -not (Test-Pat
 $version = Read-Version $versionFile
 $target = Assert-Within $versionsRoot (Join-Path $versionsRoot $version)
 $targetExists = Test-Path -LiteralPath $target
-foreach ($asset in @('CaixaLume.exe', 'Instalar-CaixaLume.ps1', 'Instalar-CaixaLume.cmd', 'Iniciar-Piloto.ps1', 'Iniciar-Piloto.cmd', 'COMO_EXECUTAR.md', 'ROTEIRO_PILOTO.md', 'VALIDACAO_MANUAL.md', 'Web\home.html', 'Web\index.html', 'Web\products.html', 'Web\reports.html', 'Web\modules.html')) {
+foreach ($asset in @('CaixaLume.exe', 'Instalar-CaixaLume.ps1', 'Instalar-CaixaLume.cmd', 'Iniciar-Piloto.ps1', 'Iniciar-Piloto.cmd', 'COMO_EXECUTAR.md', 'ROTEIRO_PILOTO.md', 'VALIDACAO_MANUAL.md', 'Web\shell.html', 'Web\shell.js', 'Web\shell.css', 'Web\home.html', 'Web\index.html', 'Web\products.html', 'Web\reports.html', 'Web\modules.html')) {
     if (-not (Test-Path -LiteralPath (Join-Path $packageRoot $asset) -PathType Leaf)) { throw "Pacote incompleto: $asset" }
 }
 $manifest = @(Import-Csv -LiteralPath $manifestFile)

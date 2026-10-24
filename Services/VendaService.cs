@@ -6,6 +6,34 @@ namespace MercadinhoPdv.Services;
 public sealed class VendaService
 {
     private readonly VendaRepository _repository = new();
+    private readonly ProdutoRepository _products = new();
+
+    public long RegistrarPorProdutoIds(IReadOnlyList<(int ProdutoId, decimal Quantidade)> solicitados, string formaPagamento,
+        decimal? valorRecebido = null, AjusteVenda? ajuste = null, string? operacaoId = null, decimal? totalEsperado = null)
+    {
+        if (solicitados.Count is < 1 or > 250) throw new InvalidOperationException("A venda precisa conter de 1 a 250 itens.");
+        if (solicitados.Any(item => item.ProdutoId <= 0 || item.Quantidade <= 0 || item.Quantidade > 100_000))
+            throw new InvalidOperationException("Produto ou quantidade inválidos.");
+
+        var products = _products.BuscarParaVenda(solicitados.Select(item => item.ProdutoId).ToArray());
+        var items = new List<ItemCarrinho>(solicitados.Count);
+        foreach (var requested in solicitados)
+        {
+            if (!products.TryGetValue(requested.ProdutoId, out Produto? product))
+                throw new InvalidOperationException("Um dos produtos não está mais disponível.");
+            items.Add(new ItemCarrinho
+            {
+                ProdutoId = product.Id,
+                Produto = product.Nome,
+                CodigoBarras = product.CodigoBarras,
+                UnidadeMedida = product.UnidadeMedida,
+                Quantidade = requested.Quantidade,
+                PrecoUnitario = product.PrecoVenda,
+                EstoqueDisponivel = product.EstoqueAtual
+            });
+        }
+        return Registrar(items, formaPagamento, valorRecebido, ajuste, operacaoId, totalEsperado);
+    }
 
     public long Registrar(List<ItemCarrinho> itens, string formaPagamento, decimal? valorRecebido = null, AjusteVenda? ajuste = null, string? operacaoId = null, decimal? totalEsperado = null)
     {

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const state = { products: [], categories: ['TODOS'], category: 'TODOS', cart: new Map(), cashOpen: false, cashStatusUncertain: false, busy: false, policy: {}, role: 'OPERADOR', adjustment: {}, checkoutId: null, checkoutOutcomeUncertain: false, checkoutCancelledId: null, draftKey: null, draftRestored: false, pendingWeight: null, visibleLimit: 250 };
+  const state = { products: [], categories: ['TODOS'], category: 'TODOS', cart: new Map(), cashOpen: false, cashStatusUncertain: false, busy: false, policy: {}, role: 'OPERADOR', adjustment: {}, checkoutId: null, checkoutOutcomeUncertain: false, checkoutCancelledId: null, draftKey: null, draftRestored: false, pendingWeight: null, pendingBarcode: null, visibleLimit: 250 };
   const elements = Object.fromEntries(['product-search','product-grid','category-list','result-count','cart-list','cart-count','subtotal','total','charge-total','charge-button','clear-cart','cash-status','user-label','user-role','user-avatar','payment-modal','payment-form','payment-total','amount-received','received-label','change-value','confirm-payment','payment-error','success-modal','success-detail','new-sale','cash-modal','cash-form','opening-balance','open-cash','cash-error','toast-region'].map(id => [id, document.getElementById(id)]));
   const request = window.MercadoBridge.request;
   const domain = window.MercadoPdv;
@@ -59,6 +59,23 @@
       else if (state.cart.size) notify('Venda em andamento recuperada neste computador.');
       if (unavailable) notify(`${unavailable} item(ns) do rascunho não estão mais disponíveis. Revise o carrinho.`, true);
     } catch (error) { notify('O rascunho da venda não pôde ser recuperado: ' + error.message, true); }
+  }
+
+  function reconcileCart() {
+    // Uma operação pendente deve manter o retrato exato enviado ao servidor.
+    if (state.checkoutId) return;
+    const currentProducts = new Map(state.products.map(product => [product.id, product]));
+    let removed = 0, repriced = 0, lowStock = 0;
+    for (const [id, item] of state.cart) {
+      const current = currentProducts.get(id);
+      if (!current) { state.cart.delete(id); removed++; continue; }
+      if (Number(item.product.price) !== Number(current.price)) repriced++;
+      item.product = current;
+      if (item.quantity > Number(current.stock)) lowStock++;
+    }
+    if (removed) notify(`${removed} item(ns) indisponível(is) saíram do carrinho. Confira a venda.`, true);
+    if (repriced) notify(`${repriced} preço(s) foram atualizados. Confira o total antes de cobrar.`, true);
+    if (lowStock) notify('Há itens no carrinho acima do estoque disponível. Ajuste a quantidade antes de cobrar.', true);
   }
 
   function showCheckoutStatus() {
@@ -208,6 +225,7 @@
       state.policy = data.adjustmentsPolicy || {}; state.role = data.userRole || 'OPERADOR';
       state.draftKey = Number.isInteger(data.userId) && data.userId > 0 ? `mercado-pdv-draft-${data.userId}` : null;
       restoreDraft();
+      reconcileCart();
       state.categories = ['TODOS', ...state.categories.filter(category => category !== 'TODOS')];
       window.__pdvUser = { name: data.userName || 'Operador', role: data.userRole || 'OPERADOR' }; refreshCashLabel();
       document.querySelectorAll('[data-module="expenses"],[data-page="reports.html"],[data-module="suppliers"],[data-module="settings"],[data-module="users"]').forEach(button => {
@@ -407,8 +425,9 @@
     const barcode = document.getElementById('unknown-code').textContent;
     document.getElementById('unknown-modal').close();
     if (state.checkoutId) { showCheckoutStatus(); return; }
+    state.pendingBarcode = barcode;
     saveDraft();
-    window.location.href = `./products.html?barcode=${encodeURIComponent(barcode)}`;
+    window.MercadoBridge.navigate(`products.html?barcode=${encodeURIComponent(barcode)}&return=pdv`);
   });
   document.getElementById('edit-adjustments').addEventListener('click', () => {
     if (!canEdit()) return;
@@ -438,16 +457,37 @@
     return true;
   }
   window.addEventListener('mercado:refresh', loadData);
+  window.addEventListener('mercado:activate', event => {
+    if ((event.detail.dirty || state.pendingBarcode) && !state.busy && !document.querySelector('dialog[open]')) {
+      void loadData().then(loaded => {
+        if (!loaded || !state.pendingBarcode || state.checkoutId) return;
+        const barcode = state.pendingBarcode;
+        state.pendingBarcode = null;
+        const product = state.products.find(item => item.barcode === barcode);
+        if (product) {
+          if (product.stock <= 0) notify('Produto cadastrado, mas está sem estoque disponível para esta venda.', true);
+          else if (addProduct(product)) notify('Produto cadastrado e adicionado à venda.');
+        } else notify('O produto ainda não foi cadastrado. A venda atual foi mantida.', true);
+      });
+    }
+    if (state.checkoutId || document.querySelector('dialog[open]')) return;
+    window.requestAnimationFrame(() => {
+      const focused = document.activeElement;
+      if (focused && focused !== document.body && focused !== elements['product-search'] &&
+          (focused.matches?.('input, textarea, select, [contenteditable="true"]'))) return;
+      elements['product-search'].focus();
+    });
+  });
   elements['payment-form'].addEventListener('submit', submitPayment);
   elements['cash-form'].addEventListener('submit', submitCash);
   elements['new-sale'].addEventListener('click', () => { elements['success-modal'].close(); elements['product-search'].focus(); });
   document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => {
     if (state.checkoutId) { notify('Consulte a venda pendente antes de sair do PDV.', true); showCheckoutStatus(); return; }
-    saveDraft(); window.location.href = `./${button.dataset.page}`;
+    saveDraft(); window.MercadoBridge.navigate(button.dataset.page);
   }));
   document.querySelectorAll('[data-module]').forEach(button => button.addEventListener('click', () => {
     if (state.checkoutId) { notify('Consulte a venda pendente antes de sair do PDV.', true); showCheckoutStatus(); return; }
-    saveDraft(); window.location.href = `./modules.html?module=${encodeURIComponent(button.dataset.module)}`;
+    saveDraft(); window.MercadoBridge.navigate(`modules.html?module=${encodeURIComponent(button.dataset.module)}`);
   }));
   document.getElementById('logout-button')?.addEventListener('click', async () => {
     if (state.checkoutId) { notify('Consulte a venda pendente antes de encerrar a sessão.', true); return; }

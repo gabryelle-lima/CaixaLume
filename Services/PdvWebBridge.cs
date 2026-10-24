@@ -84,16 +84,8 @@ internal sealed class PdvWebBridge
         string payment = checkout.PaymentMethod?.Trim().ToUpperInvariant() ?? string.Empty;
         if (payment is not ("DINHEIRO" or "PIX" or "DÉBITO" or "CRÉDITO")) throw new InvalidOperationException("Forma de pagamento inválida.");
 
-        var catalog = _products.Listar(null).ToDictionary(product => product.Id);
-        var items = new List<ItemCarrinho>(checkout.Items.Count);
-        foreach (CheckoutItem item in checkout.Items)
-        {
-            if (item.ProductId <= 0 || item.Quantity <= 0 || item.Quantity > 100_000) throw new InvalidOperationException("Produto ou quantidade inválidos.");
-            if (!catalog.TryGetValue(item.ProductId, out Produto? product)) throw new InvalidOperationException("Um dos produtos não está mais disponível.");
-            items.Add(new ItemCarrinho { ProdutoId = product.Id, Produto = product.Nome, CodigoBarras = product.CodigoBarras,
-                UnidadeMedida = product.UnidadeMedida, Quantidade = item.Quantity, PrecoUnitario = product.PrecoVenda, EstoqueDisponivel = product.EstoqueAtual });
-        }
-        long saleId = _sales.Registrar(items, payment, checkout.AmountReceived, checkout.Adjustments, checkout.OperationId, checkout.ExpectedTotal);
+        var items = checkout.Items.Select(item => (ProdutoId: item.ProductId, Quantidade: item.Quantity)).ToList();
+        long saleId = _sales.RegistrarPorProdutoIds(items, payment, checkout.AmountReceived, checkout.Adjustments, checkout.OperationId, checkout.ExpectedTotal);
         decimal total = _sales.ObterTotais(saleId).Total;
         decimal received = payment == "DINHEIRO" ? checkout.AmountReceived : total;
         return new CheckoutResult(saleId, total, payment, received, payment == "DINHEIRO" ? received - total : 0m);

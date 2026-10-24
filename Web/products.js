@@ -2,7 +2,7 @@
   'use strict';
   const { request } = window.MercadoBridge;
   const { element, currency, notify } = window.MercadoUi;
-  const state = { products: [], categories: [], suppliers: [], selectedId: null, editorId: 0, imageToken: null, removeImage: false, saving: false, category: 'Todas', query: '', inactive: false, admin: false, canDelete: false, initialBarcodeHandled: false, visibleLimit: 250 };
+  const state = { products: [], categories: [], suppliers: [], selectedId: null, editorId: 0, imageToken: null, removeImage: false, saving: false, category: 'Todas', query: '', inactive: false, admin: false, canDelete: false, initialBarcodeHandled: false, returnToPdv: false, returnBarcode: null, visibleLimit: 250 };
   const $ = id => document.getElementById(id);
   const toast = $('toast-region');
 
@@ -111,8 +111,11 @@
       window.MercadoBridge.metric('ready', performance.now() - started);
       if (!state.initialBarcodeHandled) {
         state.initialBarcodeHandled = true;
-        const barcode = new URLSearchParams(window.location.search).get('barcode');
+        const route = new URLSearchParams(window.location.search);
+        const barcode = route.get('barcode');
         if (barcode && /^\d{8,14}$/.test(barcode)) {
+          state.returnToPdv = route.get('return') === 'pdv';
+          state.returnBarcode = state.returnToPdv ? barcode : null;
           window.history.replaceState(null, '', './products.html');
           if (state.admin) { openEditor(); $('field-barcode').value = barcode; }
           else { state.query = barcode; $('product-search').value = barcode; renderRows(); }
@@ -216,7 +219,12 @@
       state.saving = true; $('save-product').disabled = true; $('save-product').textContent = 'Salvando…';
       const saved = await request('products.save', draft);
       $('product-modal').close(); state.editorId = 0; state.imageToken = null; state.removeImage = false;
-      state.selectedId = saved.productId; await loadData(); notify(toast, 'Produto salvo.');
+      state.selectedId = saved.productId; await loadData();
+      if (state.returnToPdv && draft.codigoBarras === state.returnBarcode) {
+        state.returnToPdv = false;
+        state.returnBarcode = null;
+        window.MercadoBridge.navigate('index.html');
+      } else notify(toast, 'Produto salvo.');
     } catch (exception) { error.textContent = exception.message; }
     finally { state.saving = false; $('save-product').disabled = false; $('save-product').textContent = 'Salvar produto'; }
   }
@@ -292,10 +300,21 @@
   $('close-product').addEventListener('click', () => { if (!state.saving) $('product-modal').close(); });
   $('cancel-product').addEventListener('click', () => { if (!state.saving) $('product-modal').close(); });
   $('product-modal').addEventListener('cancel', event => { if (state.saving) event.preventDefault(); });
-  document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => { window.location.href = `./${button.dataset.page}`; }));
-  document.querySelectorAll('[data-module]').forEach(button => button.addEventListener('click', () => { window.location.href = `./modules.html?module=${encodeURIComponent(button.dataset.module)}`; }));
+  document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => { window.MercadoBridge.navigate(button.dataset.page); }));
+  document.querySelectorAll('[data-module]').forEach(button => button.addEventListener('click', () => { window.MercadoBridge.navigate(`modules.html?module=${encodeURIComponent(button.dataset.module)}`); }));
   $('logout-button').addEventListener('click', async () => { try { await request('session.logout'); } catch (error) { notify(toast, error.message, true); } });
-  document.addEventListener('keydown', event => { if (event.key === 'F2' && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); window.location.href = './index.html'; } });
+  document.addEventListener('keydown', event => { if (event.key === 'F2' && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); window.MercadoBridge.navigate('index.html'); } });
   window.addEventListener('mercado:refresh', loadData);
+  window.addEventListener('mercado:activate', async event => {
+    if (event.detail.first || state.saving || document.querySelector('dialog[open]')) return;
+    const route = new URL(event.detail.target, location.href);
+    const barcode = route.searchParams.get('barcode');
+    state.returnToPdv = route.searchParams.get('return') === 'pdv';
+    state.returnBarcode = state.returnToPdv ? barcode : null;
+    if (event.detail.dirty) await loadData();
+    if (!barcode || !/^\d{8,14}$/.test(barcode)) return;
+    if (state.admin) { openEditor(); $('field-barcode').value = barcode; }
+    else { state.query = barcode; $('product-search').value = barcode; renderRows(); }
+  });
   loadData();
 })();

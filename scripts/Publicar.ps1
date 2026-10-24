@@ -1,6 +1,6 @@
-﻿param([string]$Destino, [string]$Versao = '0.1.2')
+param([string]$Destino, [string]$Versao = '0.1.3')
 $ErrorActionPreference = 'Stop'
-if ($Versao -notmatch '^\d+\.\d+\.\d+$') { throw 'Informe a versão no formato principal.secundária.correção (exemplo: 0.1.2).' }
+if ($Versao -notmatch '^\d+\.\d+\.\d+$') { throw 'Informe a versão no formato principal.secundária.correção (exemplo: 0.1.3).' }
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pilotGuide = Join-Path $projectRoot ('docs\PILOTO_' + $Versao + '.md')
 if (-not (Test-Path -LiteralPath $pilotGuide -PathType Leaf)) { throw "Roteiro do piloto não encontrado para a versão ${Versao}: $pilotGuide" }
@@ -15,7 +15,7 @@ Push-Location $projectRoot
 try {
     & dotnet publish MercadinhoPdv.csproj -p:PublishProfile=Windows-x64 -p:Version=$Versao --output $Destino
     if ($LASTEXITCODE -ne 0) { throw 'A publicação falhou.' }
-    foreach ($asset in @('CaixaLume.exe','Web\home.html','Web\index.html','Web\products.html','Web\reports.html','Web\modules.html','Web\app.js','Web\products.js','Web\reports.js','Web\modules.js','Web\pdv-domain.js','Web\bridge.js','Web\ui.js','Web\home.js','Web\styles.css','Web\home.css','Web\products.css','Web\reports.css','Web\modules.css')) {
+    foreach ($asset in @('CaixaLume.exe','Web\shell.html','Web\shell.js','Web\shell.css','Web\home.html','Web\index.html','Web\products.html','Web\reports.html','Web\modules.html','Web\app.js','Web\products.js','Web\reports.js','Web\modules.js','Web\pdv-domain.js','Web\bridge.js','Web\ui.js','Web\home.js','Web\styles.css','Web\home.css','Web\products.css','Web\reports.css','Web\modules.css')) {
         if (!(Test-Path -LiteralPath (Join-Path $Destino $asset))) { throw "Arquivo ausente na publicação: $asset" }
     }
     Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\INSTALACAO_E_OPERACAO.md') -Destination (Join-Path $Destino 'COMO_EXECUTAR.md')

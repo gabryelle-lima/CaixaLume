@@ -125,9 +125,10 @@
   $('pdf-report').addEventListener('click', () => exportReport('reports.exportPdf'));
   $('print-report').addEventListener('click', () => exportReport('reports.print'));
   $('report-load-more-button').addEventListener('click', appendReportRows);
-  document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => { window.location.href = `./${button.dataset.page}`; }));
-  document.querySelectorAll('[data-module]').forEach(button => button.addEventListener('click', () => { window.location.href = `./modules.html?module=${encodeURIComponent(button.dataset.module)}`; }));
+  document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => { window.MercadoBridge.navigate(button.dataset.page); }));
+  document.querySelectorAll('[data-module]').forEach(button => button.addEventListener('click', () => { window.MercadoBridge.navigate(`modules.html?module=${encodeURIComponent(button.dataset.module)}`); }));
   $('logout-button').addEventListener('click', async () => { try { await request('session.logout'); } catch (error) { notify($('toast-region'), error.message, true); } });
-  document.addEventListener('keydown', event => { if (event.key === 'F2' && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); window.location.href = './index.html'; } });
+  document.addEventListener('keydown', event => { if (event.key === 'F2' && !event.altKey && !event.ctrlKey && !event.metaKey) { event.preventDefault(); window.MercadoBridge.navigate('index.html'); } });
+  window.addEventListener('mercado:activate', event => { if (event.detail.dirty) loadReport(); });
   renderTabs(); setPeriod(); loadReport();
 })();

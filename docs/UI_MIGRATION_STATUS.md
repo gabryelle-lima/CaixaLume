@@ -15,4 +15,4 @@ Os recursos Web são carregados da subpasta `Web` da publicação. A falha de We
 - Gestão: estoque, caixa, vendas, despesas, fornecedores, configurações, usuários e relatórios na navegação principal.
 - Relatórios: leitura por período, impressão e exportação PDF/Excel.
 
-As páginas são locais e funcionam sem rede. A consulta de catálogo online e o download de versões privadas precisam de internet. A aceitação visual em resoluções, escalas e equipamentos reais continua no [roteiro do piloto](PILOTO_0.1.2.md).
+As páginas são locais e funcionam sem rede. A consulta de catálogo online e o download de versões privadas precisam de internet. A aceitação visual em resoluções, escalas e equipamentos reais continua no [roteiro do piloto](PILOTO_0.1.3.md).

@@ -1,9 +1,10 @@
 # Estado do CaixaLume
 
-Atualizado em 2026-10-24 para a versão 0.1.2, destinada ao primeiro piloto controlado.
+Atualizado em 2026-10-24 para a versão 0.1.3, destinada ao primeiro piloto controlado.
 
 ## Pronto no código
 
+- Navegação que conserva as telas carregadas na sessão, com foco no uso repetido do PDV e no carrinho em andamento.
 - Aplicativo Windows x64 com interface local WebView2 e SQLite local. Após o login, visão geral, PDV, produtos, estoque, caixa, vendas, despesas, relatórios, fornecedores, configurações e usuários compartilham a mesma navegação.
 - Venda, itens, baixa de estoque, movimentação do caixa e auditoria são gravados em transação. O identificador da operação protege o checkout contra confirmação duplicada.
 - Abertura e fechamento de caixa, suprimento, sangria, despesas, histórico, cancelamento autorizado de venda, cadastro e movimentação de estoque.
@@ -20,4 +21,4 @@ Atualizado em 2026-10-24 para a versão 0.1.2, destinada ao primeiro piloto cont
 - Consulta ao Open Food Facts é opcional e depende de internet e dos dados do catálogo. O cadastro manual funciona sem essa consulta.
 - Ainda falta a aceitação prática na máquina da loja: abrir e reiniciar, navegar entre módulos, vender, fechar caixa, conferir relatórios, restaurar uma cópia de teste e verificar impressora/leitor/balança, se usados.
 
-O roteiro e os critérios para aprovar o piloto estão em [PILOTO_0.1.2.md](PILOTO_0.1.2.md). Não use a base real para ensaiar restauração ou limpeza de dados.
+O roteiro e os critérios para aprovar o piloto estão em [PILOTO_0.1.3.md](PILOTO_0.1.3.md). Não use a base real para ensaiar restauração ou limpeza de dados.

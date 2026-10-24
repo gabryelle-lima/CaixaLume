@@ -6,6 +6,10 @@ O código fica no repositório privado `gabryelle-lima/CaixaLume`. A versão [v0
 
 O download exige uma conta com acesso ao repositório privado. Nenhuma chave do GitHub é embutida no programa ou no ZIP. Uma tag `vX.Y.Z` prepara automaticamente um rascunho privado; o fluxo também aceita disparo manual. A atualização no computador da loja continua manual: baixar, extrair e executar o instalador com o aplicativo fechado. A operação do caixa foi projetada para ser local; seu funcionamento sem internet deve ser confirmado no piloto.
 
+## Versão 0.1.3
+
+A 0.1.3 mantém as telas carregadas durante a sessão para reduzir a espera ao voltar a um módulo. O PDV preserva o carrinho ao navegar; a finalização consulta apenas os itens do carrinho. A tela inicial mostra os primeiros passos de uma loja nova. A aceitação de desempenho e usabilidade deve ser feita na máquina da loja antes de usar em vendas reais.
+
 ## Preparar e aplicar uma atualização
 
 **Atualização da 0.1.1 para a 0.1.2:** a 0.1.1 podia parar antes das migrações com "another row available"; o aplicativo não havia alterado o banco nessa falha. Feche o aplicativo, descarte somente a pasta extraída do ZIP 0.1.1, baixe e extraia o ZIP 0.1.2 em uma pasta vazia e execute o instalador novo. Preserve a base de dados, as imagens e o backup. O instalador cria uma nova cópia de segurança antes de trocar o atalho.

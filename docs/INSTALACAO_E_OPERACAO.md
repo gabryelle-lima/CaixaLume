@@ -1,11 +1,11 @@
 # Instalação e operação — CaixaLume
 
-## Instalar a versão 0.1.2 no computador de teste
+## Instalar a versão 0.1.3 no computador de teste
 
 1. Instale o **.NET Desktop Runtime 10 para Windows x64** e o **Microsoft Edge WebView2 Evergreen Runtime**. O pacote é dependente desses componentes.
 2. Baixe o ZIP da versão privada com uma conta autorizada no repositório `gabryelle-lima/CaixaLume`. Extraia o ZIP inteiro para uma pasta temporária; mantenha a subpasta `Web` e todos os arquivos juntos.
 3. Feche qualquer janela do CaixaLume ou do antigo MercadinhoPdv. Faça também um backup pela tela **Configurações** antes de atualizar uma instalação que já contém vendas.
-4. Na pasta extraída, abra `Instalar-CaixaLume.cmd`. Ele confere os arquivos do pacote, copia a versão para `%LOCALAPPDATA%\CaixaLume\versoes\0.1.2`, faz uma cópia adicional do banco existente e cria o atalho **CaixaLume** para o usuário atual.
+4. Na pasta extraída, abra `Instalar-CaixaLume.cmd`. Ele confere os arquivos do pacote, copia a versão para `%LOCALAPPDATA%\CaixaLume\versoes\0.1.3`, faz uma cópia adicional do banco existente e cria o atalho **CaixaLume** para o usuário atual.
 5. Abra o aplicativo pelo atalho **CaixaLume** no menu Iniciar ou na área de trabalho. Na primeira utilização, cadastre a conta administradora com senha de pelo menos 10 caracteres. Abra o caixa, cadastre produtos e confira os equipamentos antes de operar.
 
 O instalador não precisa de acesso ao GitHub: o download do ZIP privado é feito separadamente. A operação local sem internet deve ser conferida na aceitação do piloto. O pacote não contém o banco de dados da loja. `ROTEIRO_PILOTO.md` e `VALIDACAO_MANUAL.md` acompanham o ZIP para orientar essa conferência.
@@ -14,11 +14,11 @@ Atalhos antigos que apontam para `MercadinhoPdv.exe` não são atualizados pelo 
 
 ### Se a versão 0.1.1 não iniciou
 
-A v0.1.1 podia exibir **"another row available"** ao abrir. Essa falha ocorria antes das migrações e antes de o aplicativo alterar o banco. O instalador da 0.1.1 pode ter feito uma cópia de segurança e apontado o atalho para a versão, mas **não é necessário apagar nem restaurar o banco por causa desse erro**. Feche o CaixaLume, descarte **somente a pasta onde o ZIP 0.1.1 foi extraído**, baixe e extraia o ZIP 0.1.2 em uma pasta nova e execute o instalador dessa pasta. Se a 0.1.1 tiver sido instalada, sua pasta continuará preservada como versão anterior; a base fica fora das pastas do programa. Evite voltar à 0.1.1 com esse defeito.
+A v0.1.1 podia exibir **"another row available"** ao abrir. Essa falha ocorria antes das migrações e antes de o aplicativo alterar o banco. O instalador da 0.1.1 pode ter feito uma cópia de segurança e apontado o atalho para a versão, mas **não é necessário apagar nem restaurar o banco por causa desse erro**. Feche o CaixaLume, descarte **somente a pasta onde o ZIP 0.1.1 foi extraído**, baixe e extraia o ZIP 0.1.3 em uma pasta nova e execute o instalador dessa pasta. Se a 0.1.1 tiver sido instalada, sua pasta continuará preservada como versão anterior; a base fica fora das pastas do programa. Evite voltar à 0.1.1 com esse defeito.
 
 ## Testar sem tocar nos dados reais
 
-Abra `Iniciar-Piloto.cmd` dentro da pasta da versão instalada em `%LOCALAPPDATA%\CaixaLume\versoes\0.1.2`. Ele inicia uma sessão separada que usa `%LOCALAPPDATA%\CaixaLume\piloto\mercado-teste.db`. Cadastros, caixas, vendas e imagens importadas nessa sessão ficam separados dos dados reais. Feche a sessão piloto antes de abrir o atalho normal. O atalho **CaixaLume** usa o banco normal, desde que `MERCADINHOPDV_DATABASE` não tenha sido configurada no Windows. Os logs continuam em uma pasta compartilhada.
+Abra `Iniciar-Piloto.cmd` dentro da pasta da versão instalada em `%LOCALAPPDATA%\CaixaLume\versoes\0.1.3`. Ele inicia uma sessão separada que usa `%LOCALAPPDATA%\CaixaLume\piloto\mercado-teste.db`. Cadastros, caixas, vendas e imagens importadas nessa sessão ficam separados dos dados reais. Feche a sessão piloto antes de abrir o atalho normal. O atalho **CaixaLume** usa o banco normal, desde que `MERCADINHOPDV_DATABASE` não tenha sido configurada no Windows. Os logs continuam em uma pasta compartilhada.
 
 ## Dados, backup e retorno à versão anterior
 
