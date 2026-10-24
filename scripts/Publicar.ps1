@@ -1,6 +1,6 @@
-﻿param([string]$Destino, [string]$Versao = '0.1.1')
+﻿param([string]$Destino, [string]$Versao = '0.1.2')
 $ErrorActionPreference = 'Stop'
-if ($Versao -notmatch '^\d+\.\d+\.\d+$') { throw 'Informe a versão no formato principal.secundária.correção (exemplo: 0.1.1).' }
+if ($Versao -notmatch '^\d+\.\d+\.\d+$') { throw 'Informe a versão no formato principal.secundária.correção (exemplo: 0.1.2).' }
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $pilotGuide = Join-Path $projectRoot ('docs\PILOTO_' + $Versao + '.md')
 if (-not (Test-Path -LiteralPath $pilotGuide -PathType Leaf)) { throw "Roteiro do piloto não encontrado para a versão ${Versao}: $pilotGuide" }

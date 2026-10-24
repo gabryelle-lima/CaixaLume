@@ -8,6 +8,8 @@ O download exige uma conta com acesso ao repositório privado. Nenhuma chave do 
 
 ## Preparar e aplicar uma atualização
 
+**Atualização da 0.1.1 para a 0.1.2:** a 0.1.1 podia parar antes das migrações com "another row available"; o aplicativo não havia alterado o banco nessa falha. Feche o aplicativo, descarte somente a pasta extraída do ZIP 0.1.1, baixe e extraia o ZIP 0.1.2 em uma pasta vazia e execute o instalador novo. Preserve a base de dados, as imagens e o backup. O instalador cria uma nova cópia de segurança antes de trocar o atalho.
+
 1. Incrementar a versão do projeto; não reutilizar um número já publicado.
 2. Gerar o ZIP com `scripts/Publicar.ps1` e conferir o checksum `.sha256` e os arquivos principais do pacote.
 3. Criar o lançamento pelo fluxo privado do GitHub e revisar o rascunho antes de publicá-lo.

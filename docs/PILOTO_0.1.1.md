@@ -1,5 +1,7 @@
 # CaixaLume 0.1.1 — primeiro piloto controlado
 
+> **Versão substituída:** a 0.1.1 pode falhar na inicialização com "another row available". Use o pacote 0.1.2 e o [roteiro atualizado](PILOTO_0.1.2.md). Essa falha ocorre antes das migrações e não altera o banco pelo aplicativo; preserve os dados existentes.
+
 ## Escopo
 
 Esta versão permite avaliar em **um computador** o fluxo local e offline: cadastro de produtos, estoque, abertura de caixa, venda, movimentações, fechamento, histórico, relatórios e backup. O nome inicial da loja é **Mercado** e pode ser editado pelo administrador. A interface usa um único padrão de navegação; o programa não abre automaticamente outro PDV no meio do trabalho.

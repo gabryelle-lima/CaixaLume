@@ -1,5 +1,7 @@
 # CaixaLume
 
+**Versão de teste atual: 0.1.2.** Ela substitui a 0.1.1, que podia falhar ao iniciar com "another row available" antes de migrar ou alterar o banco pelo aplicativo. Para atualizar, use um ZIP 0.1.2 extraído em pasta nova; preserve o banco existente. Veja as instruções de instalação.
+
 CaixaLume é o nome do produto; **Mercado** continua sendo o nome inicial da loja e pode ser editado pelo administrador. O aplicativo usa C#/.NET 10, Windows Forms e WebView2, com banco SQLite no perfil do Windows (`%LOCALAPPDATA%\MercadinhoPdv\dados\mercadinho.db`). A interface é HTML/CSS/JavaScript local e usa os serviços C# pela ponte WebView2. As migrações têm versões registradas em `SchemaMigrations`, rodam em transação e criam snapshot antes de atualizar um banco existente.
 
 ## Executar
@@ -35,7 +37,7 @@ dotnet build Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests
 dotnet run --project Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests.csproj --no-build --no-restore
 ```
 
-Os cenários de integração usam um banco temporário, incluindo migração, autenticação, estoque, entrada de mercadoria, vendas, cancelamento, caixa, despesas, relatórios e backup/restauração. O roteiro da primeira versão de teste está em [Piloto 0.1.1](docs/PILOTO_0.1.1.md). Para arquitetura e estado da interface, consulte `docs/ARCHITECTURE_AUDIT.md`, `docs/IMPLEMENTATION_STATUS.md` e `docs/UI_MIGRATION_STATUS.md`.
+Os cenários de integração usam um banco temporário, incluindo migração, autenticação, estoque, entrada de mercadoria, vendas, cancelamento, caixa, despesas, relatórios e backup/restauração. O roteiro da primeira versão de teste está em [Piloto 0.1.2](docs/PILOTO_0.1.2.md). Para arquitetura e estado da interface, consulte `docs/ARCHITECTURE_AUDIT.md`, `docs/IMPLEMENTATION_STATUS.md` e `docs/UI_MIGRATION_STATUS.md`.
 
 ## Limitações para produção comercial/fiscal
 

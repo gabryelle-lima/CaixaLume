@@ -27,7 +27,7 @@ internal sealed class DatabaseConnection : IDisposable
         {
             // A interface pode consultar e gravar em conexões diferentes ao mesmo tempo.
             // Aguarde a transação em curso antes de declarar o banco ocupado.
-            Execute("PRAGMA busy_timeout = 5000;");
+            if (sqlite3_busy_timeout(_database, 5000) != SqliteOk) ThrowDatabaseError();
             Execute("PRAGMA foreign_keys = ON;");
             if (Convert.ToInt64(Query("PRAGMA foreign_keys;").Single().Values.Single()) != 1)
                 throw new InvalidOperationException("A integridade referencial do SQLite não pôde ser habilitada.");
@@ -155,6 +155,7 @@ internal sealed class DatabaseConnection : IDisposable
     public void Dispose() { if (_database != IntPtr.Zero) { sqlite3_close_v2(_database); _database = IntPtr.Zero; } }
 
     [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int sqlite3_open_v2([MarshalAs(UnmanagedType.LPUTF8Str)] string filename, out IntPtr database, int flags, IntPtr zVfs);
+    [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int sqlite3_busy_timeout(IntPtr database, int milliseconds);
     [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int sqlite3_prepare_v2(IntPtr database, [MarshalAs(UnmanagedType.LPUTF8Str)] string sql, int bytes, out IntPtr statement, IntPtr tail);
     [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int sqlite3_step(IntPtr statement);
     [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int sqlite3_exec(IntPtr database, [MarshalAs(UnmanagedType.LPUTF8Str)] string sql, IntPtr callback, IntPtr callbackArgument, out IntPtr errorMessage);

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão no formato 0.1.1'
+        description: 'Versão no formato 0.1.2'
         required: true
         type: string
   push:
@@ -50,5 +50,12 @@ jobs:
           Para testar sem tocar no banco real, execute Iniciar-Piloto.cmd na pasta da versão instalada. Ele usa uma base de teste separada. O atalho CaixaLume abre a operação normal.
           '@
           Set-Content -LiteralPath $notesFile -Value $notes -Encoding utf8
+          if ($env:RELEASE_VERSION -eq '0.1.2') {
+            $correction = @'
+
+          Esta versão corrige o bloqueio de inicialização da v0.1.1 ("another row available"). A falha anterior ocorria antes das migrações e não alterava o banco pelo aplicativo. Para atualizar, feche o CaixaLume, descarte apenas a pasta extraída do ZIP 0.1.1, extraia o ZIP 0.1.2 inteiro em uma pasta nova e execute Instalar-CaixaLume.cmd. Preserve o banco em %LOCALAPPDATA%\MercadinhoPdv\dados; não é necessário apagá-lo ou restaurá-lo por causa dessa falha.
+          '@
+            Add-Content -LiteralPath $notesFile -Value $correction -Encoding utf8
+          }
           & gh release create ('v' + $env:RELEASE_VERSION) $archive $checksum --draft --prerelease --title ('CaixaLume ' + $env:RELEASE_VERSION) --notes-file $notesFile
           if ($LASTEXITCODE -ne 0) { throw 'Não foi possível criar a versão privada.' }

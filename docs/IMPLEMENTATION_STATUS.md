@@ -1,6 +1,6 @@
 # Estado do CaixaLume
 
-Atualizado em 2026-10-22 para a versão 0.1.1, destinada ao primeiro piloto controlado.
+Atualizado em 2026-10-24 para a versão 0.1.2, destinada ao primeiro piloto controlado.
 
 ## Pronto no código
 
@@ -20,4 +20,4 @@ Atualizado em 2026-10-22 para a versão 0.1.1, destinada ao primeiro piloto cont
 - Consulta ao Open Food Facts é opcional e depende de internet e dos dados do catálogo. O cadastro manual funciona sem essa consulta.
 - Ainda falta a aceitação prática na máquina da loja: abrir e reiniciar, navegar entre módulos, vender, fechar caixa, conferir relatórios, restaurar uma cópia de teste e verificar impressora/leitor/balança, se usados.
 
-O roteiro e os critérios para aprovar o piloto estão em [PILOTO_0.1.1.md](PILOTO_0.1.1.md). Não use a base real para ensaiar restauração ou limpeza de dados.
+O roteiro e os critérios para aprovar o piloto estão em [PILOTO_0.1.2.md](PILOTO_0.1.2.md). Não use a base real para ensaiar restauração ou limpeza de dados.
