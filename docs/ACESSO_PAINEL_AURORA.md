@@ -8,7 +8,7 @@ Primeiro uso após a atualização: abrir o painel pelo túnel, informar a chave
 A configuração mostra dez códigos de recuperação uma única vez. Guardar fora do servidor, preferencialmente em um gerenciador de senhas. Cada código substitui o autenticador uma vez, mas ainda exige a senha. Não compartilhar fotos da chave de configuração, dos códigos ou da chave inicial. Após recuperar acesso, trocar o autenticador em Segurança da conta.
 
 ## Uso diário
-Abrir `Abrir-Painel-Aurora.cmd`. O atalho aproveita o túnel existente ou abre SSH, verifica estritamente a chave conhecida do Aurora e abre o navegador quando o painel responder. O usuário digita a senha SSH quando solicitada, sem que o programa a salve. Manter a janela da conexão aberta. A senha SSH não é a senha da conta do painel.
+Abrir `scripts/Abrir-Painel-Aurora.ps1`. O atalho aproveita o túnel existente ou abre SSH, verifica estritamente a chave conhecida do Aurora e abre o navegador quando o painel responder. O usuário digita a senha SSH quando solicitada, sem que o programa a salve. Manter a janela da conexão aberta. A senha SSH não é a senha da conta do painel.
 
 O painel restaura a sessão válida ao abrir/recarregar. Duração padrão: 12 horas; opção explícita de manter conectado: até sete dias. Os prazos são absolutos, sem renovação silenciosa infinita. A sessão persistente sobrevive a reiniciar o navegador e o servidor, desde que o cookie não seja apagado e continue válida. Usar o mesmo navegador para manter a sessão. Em computador compartilhado, não marcar manter conectado e usar Sair.
 
@@ -17,7 +17,7 @@ Não houve abertura de porta no roteador nem liberação da administração dire
 Segurança da conta permite trocar senha com senha atual + segundo fator, trocar autenticador após confirmar senha e sair de todos os dispositivos. Troca de senha ou autenticador revoga sessões anteriores. A troca do autenticador também substitui todos os códigos de recuperação. Se perder a senha e os códigos, recuperação continua assistida pelo responsável pelo servidor: não há redefinição por e-mail/SMS fictícia nem chave mestra escondida. Não apagar tabelas para recuperar acesso sem procedimento assistido e backup.
 
 ## Implantar no Aurora
-`Atualizar-Painel-Aurora.cmd` usa o instalador assistido com o endereço atual Wi-Fi 192.168.0.8. Digitar senha do Linux no terminal quando pedir. Os arquivos já preparados em artifacts/caixalume-gestao-linux.tar.gz devem ser da compilação final. Não é necessário reinstalar Linux, certificados ou PDV.
+`scripts/Instalar-Gestao-no-Aurora.ps1` usa o instalador assistido com o endereço atual Wi-Fi 192.168.0.8. Digitar senha do Linux no terminal quando pedir. Os arquivos já preparados em artifacts/caixalume-gestao-linux.tar.gz devem ser da compilação final. Não é necessário reinstalar Linux, certificados ou PDV.
 
 O instalador faz backup consistente do banco central antes da troca de executáveis. Também copia o diretório de chaves de proteção se existir. Não substitui /etc/caixalume-gestao/server.env nem o drop-in HTTPS em /etc/systemd/system/caixalume-gestao.service.d. Dados e credenciais dos dispositivos não são modificados. Exige ainda confirmação do resultado real no Linux: `curl --fail http://127.0.0.1:5187/health`, serviço ativo, login e restauração de sessão pelo navegador.
 

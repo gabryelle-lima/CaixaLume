@@ -88,7 +88,7 @@ O CaixaLume compõe meu portfólio de desenvolvimento de software, reunindo prob
 - `CaixaLume.csproj`: aplicativo Windows; `Forms`, `Web`, `Services`, `Data` e `Models` separam interface, regras e persistência.
 - `Server`: servidor de gestão de instalações e acesso administrativo.
 - `Tests/CaixaLume.IntegrationTests`, `Tests/CaixaLume.Management.UnitTests` e `Tests/Web`: testes automatizados.
-- `scripts`: instalação, execução, publicação e manutenção; os atalhos `.cmd` continuam na raiz.
+- `scripts`: instalação, execução, publicação e manutenção; os atalhos da Área de Trabalho abrem as funções de uso diário.
 - `docs/auditorias`: relatórios das etapas anteriores; demais manuais e roteiros em `docs`.
 - `artifacts`: resultados locais de compilação e validação, ignorados pelo Git.
 

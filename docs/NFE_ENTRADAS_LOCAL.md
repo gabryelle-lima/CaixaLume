@@ -4,7 +4,7 @@ Esta funcionalidade importa **NF-e de compra recebida** (modelo 55). Ela não em
 
 ## Abrir sem instalar ou publicar
 
-Com o CaixaLume fechado, execute `Abrir-Piloto-Local.cmd` na raiz do projeto. O comando prepara uma versão local e a inicia com o banco separado do piloto em `%LOCALAPPDATA%\CaixaLume\piloto\mercado-teste.db`. Ele precisa do .NET SDK no computador e não cria uma versão no GitHub. A primeira compilação pode demorar; a navegação do aplicativo é uma etapa separada.
+Com o CaixaLume fechado, execute `scripts/Abrir-Piloto-Local.ps1` na raiz do projeto. O comando prepara uma versão local e a inicia com o banco separado do piloto em `%LOCALAPPDATA%\CaixaLume\piloto\mercado-teste.db`. Ele precisa do .NET SDK no computador e não cria uma versão no GitHub. A primeira compilação pode demorar; a navegação do aplicativo é uma etapa separada.
 
 ## Conferir a entrada
 

@@ -13,3 +13,7 @@ A pasta de trabalho será denominada `CaixaLume`, com atualização dos atalhos 
 Validação em 02/11/2026: compilação do aplicativo e servidor sem avisos; 76 testes gerais (73 anteriores + 3 de caminhos), 13 de segurança, 20 financeiros, 15 de estoque, 8 de UX, 12 centrais, 54 do servidor, 6 vetores TOTP e 20 de JavaScript: 224 aprovados. Nenhuma suíte foi interrompida.
 
 A tentativa de renomear a pasta externa em 02/11/2026 foi recusada pelo Windows por uso em outro processo. A pasta original e seus atalhos foram preservados. Foi preparado o comando `Renomear pasta para CaixaLume.cmd` na Área de Trabalho: ele deve ser executado após fechar o projeto e o aplicativo; valida os caminhos, não substitui destino existente e atualiza os atalhos. Os nomes dos projetos e testes já estão atualizados independentemente dessa etapa.
+
+Em 02/11/2026, a pasta foi movida para C:\Users\macha\Documents\CaixaLume. Os seis comandos CMD temporários da raiz foram removidos. Os atalhos do painel e de atualização agora chamam os scripts PowerShell diretamente. Os dois CMD de scripts usados no empacotamento do instalador foram preservados.
+
+Os comandos CMD temporários foram removidos também do repositório; as instruções de uso apontam para os scripts PowerShell mantidos. O auxiliar de renomeação já utilizado também foi removido. O histórico Git foi preservado.
