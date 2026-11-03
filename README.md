@@ -1,35 +1,69 @@
-# CaixaLume
+# CaixaLume — Sistema de Gestão e PDV
 
-**Versão de teste atual: 0.1.3.** Esta rodada melhora a navegação e a preparação da primeira venda. Para atualizar, use o ZIP 0.1.3 extraído em pasta nova; preserve o banco existente. Veja as instruções de instalação.
+**Aplicação desktop de gestão comercial desenvolvida em C#/.NET 10, com Windows Forms, WebView2 e SQLite.**
 
-CaixaLume é o nome do produto; **Mercado** continua sendo o nome inicial da loja e pode ser editado pelo administrador. O aplicativo usa C#/.NET 10, Windows Forms e WebView2, com banco SQLite no perfil do Windows (`%LOCALAPPDATA%\MercadinhoPdv\dados\mercadinho.db`). A interface é HTML/CSS/JavaScript local e usa os serviços C# pela ponte WebView2. As migrações têm versões registradas em `SchemaMigrations`, rodam em transação e criam snapshot antes de atualizar um banco existente.
+O CaixaLume é um projeto de software voltado à operação de pequenos comércios. Reúne frente de caixa (PDV), estoque, gestão de usuários, movimentações financeiras e relatórios. Foi desenvolvido com atenção especial a **regras de negócio, integridade dos dados, controle de acesso e testes de integração**.
 
-## Executar
+> **Status:** versão de teste **0.1.3**. Projeto em evolução; ainda não está homologado para uso fiscal ou operação comercial em produção.
 
-Baixe a [versão privada mais recente](https://github.com/gabryelle-lima/CaixaLume/releases) com uma conta GitHub que tenha acesso ao repositório. Extraia o ZIP inteiro e use `Instalar-CaixaLume.cmd` para instalar no perfil do Windows, ou abra `CaixaLume.exe` diretamente da pasta extraída. Preserve a subpasta `Web`. O instalador salva uma cópia do banco existente antes de trocar a versão; veja [instalação e operação](docs/INSTALACAO_E_OPERACAO.md) e [atualizações](docs/ATUALIZACOES.md). Para executar a partir dos fontes, use `dotnet run` ou gere a publicação com `scripts/Publicar.ps1`.
+## Tecnologias
 
-```powershell
-dotnet run
+| Camada | Tecnologia |
+| --- | --- |
+| Aplicação desktop e serviços | C# / .NET 10, Windows Forms |
+| Interface | HTML, CSS, JavaScript, WebView2 |
+| Persistência | SQLite |
+| Qualidade | Testes de integração em .NET |
+| Distribuição | Publicação e instalador para Windows |
+
+## Arquitetura resumida
+
+```mermaid
+flowchart TD
+    A[Interface WebView2] --> B[Ponte de comunicação C#]
+    B --> C[Serviços e regras de negócio]
+    C --> D[Persistência SQLite]
+    C --> E[Auditoria e permissões]
+    D --> F[Backup e migrações]
 ```
 
-No primeiro acesso, crie o usuário administrador. Cadastre usuários adicionais em **Configurações → Usuários**. As senhas são derivadas com PBKDF2-SHA256 e salt aleatório. Antes de vender, abra o caixa.
+A interface HTML/CSS/JavaScript funciona localmente dentro do aplicativo Windows. A comunicação com os serviços .NET ocorre por uma ponte WebView2, mantendo as regras de negócio na aplicação C#.
 
 ## Funcionalidades
 
-- Dashboard com faturamento, vendas, ticket médio, caixa, estoque baixo e itens próximos da validade.
-- Produtos UN/KG, categorias, fornecedores, custo, preço, validade e código de barras; consulta opcional ao Open Food Facts API v3 com revisão antes de preencher os dados e cache local das imagens.
-- PDV com busca por nome/código, carrinho, pagamento em dinheiro/PIX/débito/crédito, cálculo de troco e confirmação da venda.
-- Dashboard, PDV, produtos, estoque, caixa, vendas, despesas, relatórios, fornecedores, configurações e usuários usam a interface integrada WebView2. O programa não alterna automaticamente para o PDV WinForms antigo.
-- Vendas transacionais, histórico, detalhes e cancelamento administrativo com devolução de estoque. O cancelamento exige que o caixa vinculado ainda esteja aberto.
-- Estoque com entrada, saída, ajuste, entrada de mercadoria com custo/fornecedor/documento/validade e histórico filtrável.
-- Caixa com abertura, suprimento, sangria, despesa, conferência, fechamento e histórico persistente.
-- Despesas pesquisáveis, editáveis e canceláveis; relatórios por período com custo, lucro bruto e margem estimados, impressão, PDF e Excel com abas por seção.
-- Auditoria de ações, gerenciamento de usuários/perfis e backup/restauração do SQLite. O backup usa snapshot consistente do SQLite; a restauração valida integridade e cria uma cópia do banco atual. Imagens locais precisam de cópia separada para recuperação em outro computador.
-- Desconto em reais ou percentual e acréscimo monetário, com política configurável pelo administrador, desabilitada por padrão.
-- Edição livre de peso com precisão de 1 g, distinção de produtos vencidos/próximos e proteção contra repetição de uma mesma operação de checkout.
-- Interface escura com navegação lateral e formulários com validação. Operadores podem consultar produtos e estoque; alterações administrativas permanecem protegidas.
+- **PDV e vendas:** pesquisa por produto ou código de barras, carrinho, descontos e acréscimos configuráveis, pagamento em dinheiro/PIX/cartão, troco e confirmação de venda.
+- **Estoque:** cadastro de produtos por unidade ou peso, entradas, saídas, ajustes, validade, fornecedores e histórico.
+- **Caixa e financeiro:** abertura, suprimento, sangria, despesas, conferência, fechamento e histórico.
+- **Relatórios:** vendas, faturamento, custos, estimativa de lucro bruto e margem; exportações em PDF/Excel.
+- **Usuários e segurança:** perfis e permissões, auditoria de ações e derivação de senhas com PBKDF2-SHA256 e salt aleatório.
+- **Confiabilidade:** operações transacionais, proteção contra repetição de checkout, migrações versionadas e rotinas de backup/restauração.
 
-## Validação
+## Decisões técnicas e desafios
+
+**Integridade financeira:** vendas e alterações críticas precisam preservar a consistência entre registros, estoque e caixa. O projeto utiliza operações transacionais e testes para cenários de venda, cancelamento e movimentação.
+
+**Evolução do banco de dados:** migrações são registradas em `SchemaMigrations`, executadas em transação e precedidas de snapshot do banco existente.
+
+**Controle de acesso:** separação de operações administrativas e de operador, com permissões verificadas pelos serviços e trilhas de auditoria.
+
+**Recuperação:** backups consistentes do SQLite e validações durante a restauração. Imagens locais ainda exigem cópia separada para recuperação em outro computador.
+
+## Executar localmente
+
+**Requisitos:** Windows e SDK .NET 10. Para executar a partir do código-fonte:
+
+```powershell
+git clone https://github.com/gabryelle-lima/CaixaLume.git
+cd CaixaLume
+dotnet restore
+dotnet run
+```
+
+O banco SQLite é armazenado no perfil local do Windows, em `%LOCALAPPDATA%\MercadinhoPdv\dados\mercadinho.db`. No primeiro acesso, crie o usuário administrador e abra o caixa antes de registrar vendas.
+
+Para instalação por pacote e atualização preservando os dados, consulte [Instalação e Operação](docs/INSTALACAO_E_OPERACAO.md), [Atualizações](docs/ATUALIZACOES.md) e [Releases](https://github.com/gabryelle-lima/CaixaLume/releases), quando disponíveis.
+
+## Testes
 
 ```powershell
 dotnet build
@@ -37,8 +71,14 @@ dotnet build Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests
 dotnet run --project Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests.csproj --no-build --no-restore
 ```
 
-Os cenários de integração usam um banco temporário, incluindo migração, autenticação, estoque, entrada de mercadoria, vendas, cancelamento, caixa, despesas, relatórios e backup/restauração. O roteiro da primeira versão de teste está em [Piloto 0.1.3](docs/PILOTO_0.1.3.md). Para arquitetura e estado da interface, consulte `docs/ARCHITECTURE_AUDIT.md`, `docs/IMPLEMENTATION_STATUS.md` e `docs/UI_MIGRATION_STATUS.md`.
+Os testes de integração abrangem autenticação, migrações, estoque, vendas, cancelamentos, caixa, despesas, relatórios e backup/restauração, utilizando bancos de teste temporários. Consulte também [Auditoria do PDV](AUDITORIA_PDV.md), [Análise de UX](ANALISE_UX.md) e [Auditoria de Arquitetura](docs/ARCHITECTURE_AUDIT.md).
 
-## Limitações para produção comercial/fiscal
+## Limitações e próximos passos
 
-O sistema ainda não emite NFC-e/NF-e nem integra com SEFAZ, SAT/MFE, adquirentes, TEF ou conciliação bancária. O PDF depende da impressora virtual do Windows; impressão física depende de uma impressora instalada. A margem usa o custo unitário gravado na venda; para vendas antigas, a migração usa o custo atual como aproximação. Ainda são necessários revisão fiscal/contábil, testes de recuperação em ambiente de implantação, política de retenção de backups e avaliação de segurança operacional antes de uso em produção.
+O sistema **não emite NFC-e/NF-e** e não integra com SEFAZ, SAT/MFE, adquirentes, TEF ou conciliação bancária. Ainda requer avaliação fiscal/contábil, testes de recuperação em implantação real e revisão das rotinas de segurança e operação antes do uso comercial.
+
+## Sobre o projeto
+
+O CaixaLume compõe meu portfólio de desenvolvimento de software, reunindo problemas reais de gestão comercial e decisões técnicas que envolvem banco de dados, segurança, testes, arquitetura e experiência do usuário.
+
+**Desenvolvimento:** [Gabryelle Lima](https://github.com/gabryelle-lima)
