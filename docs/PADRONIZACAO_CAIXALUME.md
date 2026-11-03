@@ -11,3 +11,5 @@ Os arquivos de baseline das etapas anteriores são registros históricos: os has
 A pasta de trabalho será denominada `CaixaLume`, com atualização dos atalhos locais. O projeto não depende do nome da pasta externa.
 
 Validação em 02/11/2026: compilação do aplicativo e servidor sem avisos; 76 testes gerais (73 anteriores + 3 de caminhos), 13 de segurança, 20 financeiros, 15 de estoque, 8 de UX, 12 centrais, 54 do servidor, 6 vetores TOTP e 20 de JavaScript: 224 aprovados. Nenhuma suíte foi interrompida.
+
+A tentativa de renomear a pasta externa em 02/11/2026 foi recusada pelo Windows por uso em outro processo. A pasta original e seus atalhos foram preservados. Foi preparado o comando `Renomear pasta para CaixaLume.cmd` na Área de Trabalho: ele deve ser executado após fechar o projeto e o aplicativo; valida os caminhos, não substitui destino existente e atualiza os atalhos. Os nomes dos projetos e testes já estão atualizados independentemente dessa etapa.
