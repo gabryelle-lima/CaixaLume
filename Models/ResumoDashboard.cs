@@ -1,8 +1,8 @@
-namespace MercadinhoPdv.Models;
+namespace CaixaLume.Models;
 
 public sealed class ResumoDashboard
 {
-    public string NomeLoja { get; init; } = "MERCADINHO PDV";
+    public string NomeLoja { get; init; } = "CAIXALUME";
     public decimal FaturamentoHoje { get; init; }
     public int VendasHoje { get; init; }
     public decimal TicketMedio { get; init; }
@@ -19,7 +19,7 @@ public sealed class ProdutoValidadeProxima
     public string Produto { get; init; } = "";
     public DateTime Validade { get; init; }
     public int Dias { get; init; }
-    public string Status => Dias < 0 ? "VENCIDO" : Dias <= 30 ? "PRÓXIMO" : "DENTRO DA VALIDADE";
+    public string Status => Dias < 0 ? "VENCIDO" : Dias == 0 ? "VENCE HOJE" : Dias <= 30 ? "PRÓXIMO" : "DENTRO DA VALIDADE";
 }
 
 public sealed class VendaRecente

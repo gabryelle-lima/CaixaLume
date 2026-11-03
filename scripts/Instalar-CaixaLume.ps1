@@ -29,7 +29,7 @@ function Read-Version([string]$path) {
 function Ensure-Closed {
     if ((Get-Process -Name 'MercadinhoPdv' -ErrorAction SilentlyContinue) -or
         (Get-Process -Name 'CaixaLume' -ErrorAction SilentlyContinue)) {
-        throw 'Feche o CaixaLume/MercadinhoPdv antes de instalar ou voltar uma versão.'
+        throw 'Feche o CaixaLume antes de instalar ou voltar uma versão.'
     }
 }
 
@@ -125,9 +125,8 @@ try {
     }
 
     # O banco fica fora das pastas de versão. A cópia ocorre apenas com o aplicativo fechado.
-    $database = if ([string]::IsNullOrWhiteSpace($env:MERCADINHOPDV_DATABASE)) {
-        Join-Path $env:LOCALAPPDATA 'MercadinhoPdv\dados\mercadinho.db'
-    } else { [System.IO.Path]::GetFullPath($env:MERCADINHOPDV_DATABASE) }
+    . (Join-Path $PSScriptRoot 'Caminhos-CaixaLume.ps1')
+    $database = Get-CaixaLumeDatabase
     if (Test-Path -LiteralPath $database -PathType Leaf) {
         $backupRoot = Join-Path $installRoot 'backups-antes-atualizacao'
         New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null

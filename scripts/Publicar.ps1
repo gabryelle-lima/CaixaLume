@@ -13,14 +13,15 @@ $archive = Join-Path (Split-Path -Parent $Destino) ('CaixaLume-' + $Versao + '-w
 if (Test-Path -LiteralPath $archive) { throw 'O pacote desta versão já existe. Incremente a versão antes de publicar novamente.' }
 Push-Location $projectRoot
 try {
-    & dotnet publish MercadinhoPdv.csproj -p:PublishProfile=Windows-x64 -p:Version=$Versao --output $Destino
+    & dotnet publish CaixaLume.csproj -p:PublishProfile=Windows-x64 -p:Version=$Versao --output $Destino
     if ($LASTEXITCODE -ne 0) { throw 'A publicação falhou.' }
-    foreach ($asset in @('CaixaLume.exe','Web\shell.html','Web\shell.js','Web\shell.css','Web\home.html','Web\index.html','Web\products.html','Web\reports.html','Web\modules.html','Web\app.js','Web\products.js','Web\reports.js','Web\modules.js','Web\pdv-domain.js','Web\bridge.js','Web\ui.js','Web\home.js','Web\styles.css','Web\home.css','Web\products.css','Web\reports.css','Web\modules.css')) {
+    foreach ($asset in @('CaixaLume.exe','Web\shell.html','Web\shell.js','Web\shell.css','Web\home.html','Web\index.html','Web\products.html','Web\reports.html','Web\modules.html','Web\app.js','Web\products.js','Web\reports.js','Web\modules.js','Web\pdv-domain.js','Web\bridge.js','Web\ui.js','Web\ui-input.js','Web\ui.css','Web\home.js','Web\styles.css','Web\home.css','Web\products.css','Web\reports.css','Web\modules.css')) {
         if (!(Test-Path -LiteralPath (Join-Path $Destino $asset))) { throw "Arquivo ausente na publicação: $asset" }
     }
     Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\INSTALACAO_E_OPERACAO.md') -Destination (Join-Path $Destino 'COMO_EXECUTAR.md')
     Copy-Item -LiteralPath $pilotGuide -Destination (Join-Path $Destino 'ROTEIRO_PILOTO.md')
     Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\VALIDACAO_MANUAL.md') -Destination (Join-Path $Destino 'VALIDACAO_MANUAL.md')
+    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Caminhos-CaixaLume.ps1') -Destination $Destino
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Instalar-CaixaLume.ps1') -Destination $Destino
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Instalar-CaixaLume.cmd') -Destination $Destino
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Iniciar-Piloto.ps1') -Destination $Destino

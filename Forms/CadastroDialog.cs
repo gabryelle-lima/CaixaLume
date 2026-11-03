@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class CadastroDialog : Form
 {

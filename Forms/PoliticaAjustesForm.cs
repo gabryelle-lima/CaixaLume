@@ -1,7 +1,7 @@
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class PoliticaAjustesForm : Form
 {

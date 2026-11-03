@@ -1,7 +1,7 @@
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
+using CaixaLume.Data;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class CategoriaService
 {
@@ -42,6 +42,29 @@ public sealed class ConfiguracaoService
 {
     private readonly CadastroRepository _repository = new();
     public string ObterNomeLoja() => _repository.ObterNomeLoja();
+    public string ObterCnpjLoja() => _repository.ObterCnpjLoja();
+    public void SalvarCnpjLoja(string value)
+    {
+        Autorizacao.ExigirAdministrador();
+        string cnpj = (value ?? "").Trim().Replace(".", "").Replace("/", "").Replace("-", "").Replace(" ", "");
+        if (cnpj.Length != 14 || !cnpj.All(char.IsAsciiDigit) || !CnpjValido(cnpj))
+            throw new InvalidOperationException("Informe um CNPJ numérico válido com 14 dígitos. CNPJ alfanumérico ainda não é aceito nesta importação.");
+        _repository.SalvarCnpjLoja(cnpj);
+    }
+    private static bool CnpjValido(string cnpj)
+    {
+        if (cnpj.Distinct().Count() == 1) return false;
+        static int Digit(string digits, int[] weights)
+        {
+            int sum = 0;
+            for (int i = 0; i < weights.Length; i++) sum += (digits[i] - '0') * weights[i];
+            int rest = sum % 11;
+            return rest < 2 ? 0 : 11 - rest;
+        }
+        int first = Digit(cnpj, [5,4,3,2,9,8,7,6,5,4,3,2]);
+        int second = Digit(cnpj, [6,5,4,3,2,9,8,7,6,5,4,3,2]);
+        return cnpj[12] - '0' == first && cnpj[13] - '0' == second;
+    }
     public void SalvarNomeLoja(string name)
     {
         Autorizacao.ExigirAdministrador();

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MercadinhoPdv;
+namespace CaixaLume;
 
 internal static class Program
 {
@@ -33,10 +33,10 @@ internal static class Program
             }
             // A preparação do WebView2 pode ocorrer enquanto o banco é inicializado.
             // O banco ainda precisa estar pronto antes de apresentar a tela de acesso.
-            bool testEnvironment = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE"));
+            bool testEnvironment = !string.IsNullOrWhiteSpace(CaixaLume.Data.CaminhosAplicacao.BancoConfigurado);
             string browserData = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "MercadinhoPdv", testEnvironment ? "webview2-teste-" + databaseKey[..12] : "webview2");
+                "CaixaLume", testEnvironment ? "webview2-teste-" + databaseKey[..12] : "webview2");
             Directory.CreateDirectory(browserData);
             long environmentStarted = Stopwatch.GetTimestamp();
             Task<CoreWebView2Environment> browserEnvironment = CoreWebView2Environment.CreateAsync(userDataFolder: browserData);
@@ -47,21 +47,27 @@ internal static class Program
             long databaseStarted = Stopwatch.GetTimestamp();
             Data.DatabaseInitializer.Initialize();
             Diagnostics.AppLogger.Performance("startup", "database", ElapsedMilliseconds(databaseStarted));
-            while (true)
+            using var centralCancellation = new CancellationTokenSource();
+            _ = Task.Run(() => Services.GestaoCentralService.Run(centralCancellation.Token));
+            try
             {
-                long loginFormStarted = Stopwatch.GetTimestamp();
-                using (var login = new Forms.LoginForm())
+                while (true)
                 {
-                    Diagnostics.AppLogger.Performance("startup", "login-form", ElapsedMilliseconds(loginFormStarted));
-                    if (login.ShowDialog() != DialogResult.OK) break;
+                    long loginFormStarted = Stopwatch.GetTimestamp();
+                    using (var login = new Forms.LoginForm())
+                    {
+                        Diagnostics.AppLogger.Performance("startup", "login-form", ElapsedMilliseconds(loginFormStarted));
+                        if (login.ShowDialog() != DialogResult.OK) break;
+                    }
+                    using (var app = new Forms.AppWebViewForm(browserEnvironment)) app.ShowDialog();
+                    if (Models.SessaoUsuario.UsuarioId is not null) break;
                 }
-                using (var app = new Forms.AppWebViewForm(browserEnvironment)) app.ShowDialog();
-                if (Models.SessaoUsuario.UsuarioId is not null) break;
             }
+            finally { centralCancellation.Cancel(); }
         }
         catch (Exception exception)
         {
-            Diagnostics.AppLogger.Error(exception, "Inicialização do Mercadinho PDV");
+            Diagnostics.AppLogger.Error(exception, "Inicialização do CaixaLume");
             MessageBox.Show($"Não foi possível iniciar o sistema.\n{exception.Message}\n\nDetalhes registrados em:\n{Diagnostics.AppLogger.LogPath}", "Erro ao iniciar", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

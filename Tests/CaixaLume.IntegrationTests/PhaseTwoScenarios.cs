@@ -2,9 +2,9 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Data;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
 internal static class PhaseTwoScenarios
 {
@@ -27,7 +27,7 @@ internal static class PhaseTwoScenarios
         {
             string path = Path.Combine(root, "v2-migration.db");
             using (var fixture = new DatabaseConnection(path))
-                fixture.ExecuteScript("CREATE TABLE SchemaMigrations (Version INTEGER PRIMARY KEY,AppliedAt TEXT NOT NULL); INSERT INTO SchemaMigrations VALUES (1,'2026-01-01'),(2,'2026-01-01'); CREATE TABLE Vendas (Id INTEGER PRIMARY KEY,ValorTotal NUMERIC NOT NULL); INSERT INTO Vendas VALUES (123,7.50);");
+                fixture.ExecuteScript("CREATE TABLE SchemaMigrations (Version INTEGER PRIMARY KEY,AppliedAt TEXT NOT NULL); INSERT INTO SchemaMigrations VALUES (1,'2026-01-01'),(2,'2026-01-01'); CREATE TABLE Usuarios (Id INTEGER PRIMARY KEY,Perfil TEXT,Ativo INTEGER,SenhaHash TEXT); CREATE TABLE Configuracoes (Chave TEXT PRIMARY KEY,Valor TEXT); CREATE TABLE Produtos (Id INTEGER PRIMARY KEY,CodigoBarras TEXT,Nome TEXT,Ativo INTEGER,DataValidade TEXT,EstoqueAtual NUMERIC,EstoqueMinimo NUMERIC); CREATE TABLE ItensVenda (ProdutoId INTEGER); CREATE TABLE MovimentacoesEstoque (Id INTEGER PRIMARY KEY,ProdutoId INTEGER,DataMovimentacao TEXT,Documento TEXT); CREATE TABLE Vendas (Id INTEGER PRIMARY KEY,ValorTotal NUMERIC NOT NULL,FormaPagamento TEXT,Troco NUMERIC,Status TEXT,DataVenda TEXT); INSERT INTO Vendas (Id,ValorTotal) VALUES (123,7.50);");
             DatabaseInitializer.Initialize(path);
             DatabaseInitializer.Initialize(path);
             using var migrated = new DatabaseConnection(path);
@@ -145,9 +145,9 @@ internal static class PhaseTwoScenarios
         {
             var bridge = new PdvWebBridge();
             Blocked(() => bridge.Handle("""{"version":2,"id":"bad","action":"pdv.getData","payload":{}}"""));
-            Blocked(() => bridge.Handle("""{"version":1,"id":"bad","action":"pdv.checkout","payload":{"items":[{"productId":999999,"quantity":1}],"paymentMethod":"PIX","amountReceived":0}}"""));
+            Blocked(() => bridge.Handle("""{"version":1,"id":"bad","action":"pdv.checkout","payload":{"items":[{"productId":999999,"quantity":1}],"paymentMethod":"PIX","amountReceived":0,"operationId":"00000000-0000-0000-0000-000000000001","expectedTotal":0}}"""));
             products.Desativar(product.Id);
-            Blocked(() => bridge.Handle(JsonSerializer.Serialize(new { version = 1, id = "inactive", action = "pdv.checkout", payload = new { items = new[] { new { productId = product.Id, quantity = 1 } }, paymentMethod = "PIX", amountReceived = 0 } })));
+            Blocked(() => bridge.Handle(JsonSerializer.Serialize(new { version = 1, id = "inactive", action = "pdv.checkout", payload = new { items = new[] { new { productId = product.Id, quantity = 1 } }, paymentMethod = "PIX", amountReceived = 0, operationId = Guid.NewGuid().ToString(), expectedTotal = product.PrecoVenda } })));
         });
         ApiScenarios.Run(check);
         policyService.SalvarPolitica(new PoliticaAjustesVenda());

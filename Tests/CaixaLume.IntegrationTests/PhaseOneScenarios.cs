@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Security.Cryptography;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Data;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
 internal static class PhaseOneScenarios
 {
@@ -16,18 +16,18 @@ internal static class PhaseOneScenarios
 
         check("Limpeza de caixas é bloqueada no ambiente normal sem mudar histórico", () =>
         {
-            string? original = Environment.GetEnvironmentVariable("MERCADINHOPDV_AMBIENTE");
+            string? original = CaixaLume.Data.CaminhosAplicacao.AmbienteConfigurado;
             try
             {
-                Environment.SetEnvironmentVariable("MERCADINHOPDV_AMBIENTE", null);
+                Environment.SetEnvironmentVariable("CAIXALUME_AMBIENTE", null);
                 long before = Count(db, "Caixa");
                 Blocked(() => new CaixaService().LimparHistoricoParaTestes());
                 Assert(before == Count(db, "Caixa"));
-                Environment.SetEnvironmentVariable("MERCADINHOPDV_AMBIENTE", "DESENVOLVIMENTO");
+                Environment.SetEnvironmentVariable("CAIXALUME_AMBIENTE", "DESENVOLVIMENTO");
                 Blocked(() => new CaixaService().LimparHistoricoParaTestes());
                 Assert(before == Count(db, "Caixa"));
             }
-            finally { Environment.SetEnvironmentVariable("MERCADINHOPDV_AMBIENTE", original); }
+            finally { Environment.SetEnvironmentVariable("CAIXALUME_AMBIENTE", original); }
         });
         check("Toda conexão SQLite ativa foreign_keys e rejeita referência inexistente", () =>
         {
@@ -103,9 +103,18 @@ internal static class PhaseOneScenarios
         });
         check("Usuário desativado não mantém autorização administrativa pela sessão", () =>
         {
-            db.Execute("UPDATE Usuarios SET Ativo=0 WHERE Id=@Id;", new Dictionary<string, object?> { ["@Id"] = SessaoUsuario.UsuarioId });
+            var users = new UsuarioService();
+            users.Salvar(0,"ADMIN TEMPORARIO","admin-sessao-inativa","ADMINISTRADOR","senha-temporaria-123");
+            var temp = db.Query("SELECT Id FROM Usuarios WHERE Login='admin-sessao-inativa';").Single();
+            int id = Convert.ToInt32(temp["Id"]);
+            SessaoUsuario.Iniciar(id,"ADMIN TEMPORARIO","ADMINISTRADOR");
+            db.Execute("UPDATE Usuarios SET Ativo=0 WHERE Id=@Id;", new Dictionary<string, object?> { ["@Id"] = id });
             try { Blocked(Autorizacao.ExigirAdministrador); }
-            finally { db.Execute("UPDATE Usuarios SET Ativo=1 WHERE Id=@Id;", new Dictionary<string, object?> { ["@Id"] = SessaoUsuario.UsuarioId }); }
+            finally
+            {
+                Admin();
+                users.Salvar(id,"ADMIN TEMPORARIO","admin-sessao-inativa","OPERADOR");
+            }
         });
         check("Último administrador não pode remover o próprio perfil administrativo", () =>
         {

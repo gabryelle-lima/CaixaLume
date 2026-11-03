@@ -1,8 +1,8 @@
 using System.Globalization;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
+using CaixaLume.Data;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class RelatoriosService
 {
@@ -17,7 +17,7 @@ public sealed class RelatoriosService
         using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
         var salesRows = db.Query("SELECT Id, DataVenda AS Data, FormaPagamento, ValorTotal AS Total, Subtotal, ValorDesconto AS Desconto, ValorAcrescimo AS Acrescimo FROM Vendas WHERE Status = 'Concluida' AND DataVenda >= @Inicio AND DataVenda < @Fim ORDER BY DataVenda DESC;", Params(from, until));
         var sales = salesRows.Select(row => new VendaRelatorioLinha { Id = ToLong(row["Id"]), Data = ToDate(row["Data"]), FormaPagamento = ToText(row["FormaPagamento"]), Total = ToDecimal(row["Total"]), Subtotal=ToDecimal(row["Subtotal"]), Desconto=ToDecimal(row["Desconto"]), Acrescimo=ToDecimal(row["Acrescimo"]) }).ToList();
-        var payments = db.Query("SELECT FormaPagamento, COUNT(*) AS Quantidade, SUM(ValorTotal) AS Total FROM Vendas WHERE Status = 'Concluida' AND DataVenda >= @Inicio AND DataVenda < @Fim GROUP BY FormaPagamento ORDER BY Total DESC;", Params(from, until))
+        var payments = db.Query("SELECT FormaPagamento, COUNT(*) AS Quantidade, SUM(Centavos)/100.0 AS Total FROM (SELECT p.Forma AS FormaPagamento,p.ValorCentavos AS Centavos FROM PagamentosVenda p JOIN Vendas v ON v.Id=p.VendaId WHERE v.Status='Concluida' AND v.DataVenda>=@Inicio AND v.DataVenda<@Fim UNION ALL SELECT v.FormaPagamento,CAST(ROUND(v.ValorTotal*100) AS INTEGER) FROM Vendas v WHERE v.Status='Concluida' AND v.DataVenda>=@Inicio AND v.DataVenda<@Fim AND NOT EXISTS (SELECT 1 FROM PagamentosVenda p WHERE p.VendaId=v.Id)) GROUP BY FormaPagamento ORDER BY Total DESC;", Params(from, until))
             .Select(row => new PagamentoRelatorioLinha { FormaPagamento = ToText(row["FormaPagamento"]), Quantidade = ToInt(row["Quantidade"]), Total = ToDecimal(row["Total"]) }).ToList();
         var products = db.Query("SELECT p.Nome AS Produto, i.UnidadeMedida AS Unidade, SUM(i.Quantidade) AS Quantidade, SUM(i.Subtotal) AS Total FROM ItensVenda i JOIN Vendas v ON v.Id = i.VendaId JOIN Produtos p ON p.Id = i.ProdutoId WHERE v.Status = 'Concluida' AND v.DataVenda >= @Inicio AND v.DataVenda < @Fim GROUP BY p.Id, p.Nome, i.UnidadeMedida ORDER BY Quantidade DESC LIMIT 10;", Params(from, until))
             .Select(row => new ProdutoMaisVendidoLinha { Produto = ToText(row["Produto"]), Unidade = ToText(row["Unidade"]), Quantidade = ToDecimal(row["Quantidade"]), Total = ToDecimal(row["Total"]) }).ToList();

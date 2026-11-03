@@ -3,7 +3,7 @@ using System.Drawing.Drawing2D;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal static class UiTheme
 {

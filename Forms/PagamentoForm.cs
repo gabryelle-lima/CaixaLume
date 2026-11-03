@@ -1,7 +1,7 @@
 using System.Globalization;
-using MercadinhoPdv.Services;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class PagamentoForm : Form
 {
@@ -15,7 +15,7 @@ internal sealed class PagamentoForm : Form
     private readonly Button _confirm = new() { Text = "CONFIRMAR VENDA", Dock = DockStyle.Fill, Enabled = false };
     private readonly Dictionary<string, Button> _methods = new(StringComparer.OrdinalIgnoreCase);
     public string FormaPagamento { get; private set; } = "";
-    public decimal ValorRecebido => FormaPagamento == "DINHEIRO" && PagamentoService.TryParseValor(_received.Text, out decimal value) ? value : _total;
+    public decimal ValorRecebido => FormaPagamento == "DINHEIRO" && EntradaNumerica.TryParseDinheiro(_received.Text, out decimal value) ? value : _total;
     public decimal Troco => FormaPagamento == "DINHEIRO" ? Math.Max(0, ValorRecebido - _total) : 0;
 
     public PagamentoForm(decimal total)
@@ -52,7 +52,7 @@ internal sealed class PagamentoForm : Form
         for (int i = 0; i < methods.Length; i++)
         {
             string method = methods[i];
-            var button = new Button { Text = method, Dock = DockStyle.Fill, Margin = new Padding(3), FlatStyle = FlatStyle.Flat, BackColor = UiTheme.Surface, ForeColor = UiTheme.Text };
+            var button = new Button { Text = $"{method} · F{i+6}", Dock = DockStyle.Fill, Margin = new Padding(3), FlatStyle = FlatStyle.Flat, BackColor = UiTheme.Surface, ForeColor = UiTheme.Text };
             button.FlatAppearance.BorderColor = UiTheme.Outline;
             button.Click += (_, _) => SelectMethod(method);
             _methods.Add(method, button);
@@ -65,7 +65,7 @@ internal sealed class PagamentoForm : Form
         cashBlock.Controls.Add(_received, 0, 1);
         _cashEntryBlock=cashBlock;
         root.Controls.Add(cashBlock, 0, 3);
-        var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2 };
+        var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 3 };
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55)); footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45));
         footer.RowStyles.Add(new RowStyle(SizeType.Absolute, 34)); footer.RowStyles.Add(new RowStyle(SizeType.Absolute, 38)); footer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         footer.Controls.Add(_changeCaption, 0, 0);
@@ -106,6 +106,9 @@ internal sealed class PagamentoForm : Form
         _confirm.Click += (_, _) => { if (!IsPaymentValid()) return; DialogResult = DialogResult.OK; Close(); };
         Shown += (_, _) => _methods["DINHEIRO"].Focus();
         CancelButton = _cancel;
+        AcceptButton = _confirm;
+        KeyPreview=true;AutoScaleMode=AutoScaleMode.Dpi;UiTheme.FitToWorkingArea(this);
+        KeyDown+=(_,e)=>{string? method=e.KeyCode switch{Keys.F6=>"DINHEIRO",Keys.F7=>"PIX",Keys.F8=>"DÉBITO",Keys.F9=>"CRÉDITO",_=>null};if(method is not null){e.SuppressKeyPress=true;SelectMethod(method);if(method!="DINHEIRO")_confirm.Focus();}};
         SelectMethod("");
         UpdateChange();
     }
@@ -133,18 +136,21 @@ internal sealed class PagamentoForm : Form
 
     private void UpdateChange()
     {
-        decimal received = PagamentoService.TryParseValor(_received.Text, out var amount) ? amount : 0;
+        bool parsed=EntradaNumerica.TryParseDinheiro(_received.Text, out var amount);
+        decimal received=parsed?amount:0;
         decimal change = FormaPagamento == "DINHEIRO" && received >= _total ? PagamentoService.CalcularTroco(_total, received) : 0;
         _change.Text = FormaPagamento == "DINHEIRO" ? change.ToString("C2") : _total.ToString("C2");
-        bool valid = FormaPagamento.Length > 0 && (FormaPagamento != "DINHEIRO" || received >= _total);
+        bool valid = FormaPagamento.Length > 0 && (FormaPagamento != "DINHEIRO" || parsed && received >= _total);
         _confirm.Enabled = valid;
-        _validation.Text = FormaPagamento == "DINHEIRO" && !valid && !string.IsNullOrWhiteSpace(_received.Text) ? "O valor recebido precisa cobrir o total da venda." : "";
+        _validation.Text = FormaPagamento == "DINHEIRO" && !valid && !string.IsNullOrWhiteSpace(_received.Text) ? (!parsed?"Informe um valor válido, como 14,27 ou 14.27.":"O valor recebido precisa cobrir o total da venda.") : "";
     }
 
     private bool IsPaymentValid()
     {
         if (FormaPagamento.Length == 0) { _validation.Text = "Selecione a forma de pagamento desta venda."; return false; }
-        if (FormaPagamento != "DINHEIRO" || (PagamentoService.TryParseValor(_received.Text, out var amount) && amount >= _total)) return true;
+        if (FormaPagamento != "DINHEIRO") return true;
+        if (!EntradaNumerica.TryParseDinheiro(_received.Text,out var amount)){_validation.Text="Informe um valor válido, como 14,27 ou 14.27.";_received.Focus();return false;}
+        if(amount>=_total)return true;
         _validation.Text = "O valor recebido precisa cobrir o total da venda.";
         return false;
     }

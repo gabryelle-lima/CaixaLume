@@ -1,4 +1,4 @@
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal static class UiDialog
 {
@@ -18,7 +18,7 @@ internal static class UiDialog
         cancel.Click += (_, _) => { dialog.DialogResult = DialogResult.Cancel; dialog.Close(); };
         accept.Click += (_, _) => { dialog.DialogResult = DialogResult.Yes; dialog.Close(); };
         dialog.CancelButton = cancel;
-        dialog.AcceptButton = accept;
+        dialog.AcceptButton = destructive ? cancel : accept;
         return dialog.ShowDialog(owner) == DialogResult.Yes;
     }
 
@@ -71,9 +71,13 @@ internal static class UiDialog
         var heading = new Label { Text = title.ToUpperInvariant(), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = UiTheme.Text, AutoEllipsis = true };
         layout.Controls.Add(heading, 1, 0);
         var body = new Label { Text = message, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, ForeColor = UiTheme.Muted, AutoSize = false, AutoEllipsis = false, MaximumSize = new Size(380, 0) };
-        layout.Controls.Add(body, 1, 1);
+        var scroll=new Panel { Dock=DockStyle.Fill,AutoScroll=true };
+        body.Dock=DockStyle.None;body.AutoSize=true;body.MaximumSize=new Size(360,0);scroll.Controls.Add(body);
+        scroll.SizeChanged+=(_,_)=>body.MaximumSize=new Size(Math.Max(100,scroll.ClientSize.Width-24),0);
+        layout.Controls.Add(scroll, 1, 1);
         form.Controls.Add(layout);
         UiWindowChrome.Apply(form);
+        UiTheme.FitToWorkingArea(form);
         return form;
     }
 

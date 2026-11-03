@@ -1,6 +1,6 @@
-using MercadinhoPdv.Services;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class LoginForm : Form
 {
@@ -150,7 +150,7 @@ internal sealed class LoginForm : Form
                 _password.Focus();
                 return;
             }
-            MercadinhoPdv.Models.SessaoUsuario.Iniciar(authenticated.Value.Id, authenticated.Value.Nome, authenticated.Value.Perfil);
+            CaixaLume.Models.SessaoUsuario.Iniciar(authenticated.Value.Id, authenticated.Value.Nome, authenticated.Value.Perfil);
             DialogResult = DialogResult.OK;
             Close();
         }

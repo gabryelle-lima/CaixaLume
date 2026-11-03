@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
+using CaixaLume.Data;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 /// <summary>Operações dos módulos de gestão dentro do shell local.</summary>
 internal sealed class ManagementWebBridge
@@ -18,6 +18,7 @@ internal sealed class ManagementWebBridge
     private readonly UsuarioService _users = new();
     private readonly ConfiguracaoService _settings = new();
     private readonly AjustesVendaService _policy = new();
+    private readonly NfeImportService _nfe = new();
 
     internal object GetData(JsonElement payload)
     {
@@ -29,11 +30,16 @@ internal sealed class ManagementWebBridge
         object data = module switch
         {
             "stock" => new { products = _stock.Listar().Where(p => p.Ativo).ToList(), categories = _products.ListarCategorias(), suppliers = _products.ListarFornecedores(), movements = Text(payload, "tab") == "movements" ? _stock.ListarMovimentacoes(inicio: start, fim: end, pesquisaProduto: Text(payload, "search")) : new List<MovimentoEstoqueLinha>() },
-            "cash" => CashData(Text(payload, "tab")),
-            "sales" => new { sales = _sales.ListarHistorico(start, end, Text(payload, "status") switch { "Concluida" => "Concluida", "Cancelada" => "Cancelada", _ => null }) },
+            "invoices" => AdministratorData(() =>
+            {
+                var report = _nfe.List(start, end);
+                return new { invoices = report.Invoices, entries = report.Entries, storeCnpj = _settings.ObterCnpjLoja() };
+            }),
+            "cash" => CashData(Text(payload, "tab"),start,end),
+            "sales" => SalesData(payload,start,end),
             "expenses" => new { expenses = _expenses.Listar(start, end, Text(payload, "search")) },
             "suppliers" => AdministratorData(() => new { suppliers = _suppliers.Listar(null, true), categories = _categories.Listar(null, true) }),
-            "settings" => AdministratorData(() => new { storeName = _settings.ObterNomeLoja(), policy = _policy.ObterPolitica(), audit = AuditRows(), testTools = AmbienteAplicacao.FerramentasTesteDisponiveis }),
+            "settings" => AdministratorData(() => new { storeName = _settings.ObterNomeLoja(), storeCnpj = _settings.ObterCnpjLoja(), central = new GestaoCentralService().Status(), policy = _policy.ObterPolitica(), audit = AuditRows(), testTools = AmbienteAplicacao.FerramentasTesteDisponiveis }),
             "users" => AdministratorData(() => new { users = _users.Listar(), currentUserId = SessaoUsuario.UsuarioId }),
             _ => throw new InvalidOperationException("Módulo inválido.")
         };
@@ -50,6 +56,7 @@ internal sealed class ManagementWebBridge
         {
             "sales" => new { rows = _sales.Detalhes(id), totals = _sales.ObterTotais(id) },
             "cash" => new { rows = _cash.ListarMovimentacoes(id) },
+            "invoices" => AdministratorData(() => _nfe.Details(id)),
             _ => throw new InvalidOperationException("Detalhes indisponíveis para este módulo.")
         };
     }
@@ -82,12 +89,22 @@ internal sealed class ManagementWebBridge
             case "suppliers.deactivate": _suppliers.Desativar(Int(payload, "id")); break;
             case "categories.save": _categories.Salvar(new Categoria { Id = Int(payload, "id"), Nome = Text(payload, "name") }); break;
             case "categories.deactivate": _categories.Desativar(Int(payload, "id")); break;
+            case "settings.central.connect":
+                new GestaoCentralService().Connect(Text(payload,"server"),Text(payload,"code")).GetAwaiter().GetResult(); break;
+            case "settings.central.disconnect": new GestaoCentralService().Disconnect(); break;
+            case "settings.central.check":
+                Autorizacao.ExigirAdministrador(); new GestaoCentralService().SendHeartbeat().GetAwaiter().GetResult(); break;
             case "settings.name": _settings.SalvarNomeLoja(Text(payload, "name")); break;
+            case "settings.cnpj": _settings.SalvarCnpjLoja(Text(payload, "cnpj")); break;
             case "settings.policy":
                 _policy.SalvarPolitica(new PoliticaAjustesVenda { Habilitada = Boolean(payload, "enabled"), PermitirOperador = Boolean(payload, "operators"), MaxDescontoPercentual = Decimal(payload, "discount"), MaxAcrescimoValor = Decimal(payload, "surcharge") });
                 break;
             case "settings.clearCash": Autorizacao.ExigirAdministrador(); return new { cleared = _cash.LimparHistoricoParaTestes() };
-            case "users.save": _users.Salvar(Int(payload, "id"), Text(payload, "name"), Text(payload, "login"), Text(payload, "role"), Text(payload, "password")); break;
+            case "users.save": _users.Salvar(Int(payload, "id"), Text(payload, "name"), Text(payload, "login"), Text(payload, "role"), payload.TryGetProperty("password", out var password) && password.ValueKind == JsonValueKind.String ? password.GetString() : null); break;
+            case "users.permission.user":
+                Autorizacao.ConfigurarPermissaoUsuario(Int(payload, "id"), payload.TryGetProperty("allow", out var allow) && allow.ValueKind == JsonValueKind.Null ? null : Boolean(payload, "allow"));
+                break;
+            case "users.permission.profile": Autorizacao.ConfigurarPermissaoPerfil(Text(payload, "role"), Boolean(payload, "allow")); break;
             case "users.deactivate": _users.Desativar(Int(payload, "id")); break;
             case "users.reactivate": _users.Reativar(Int(payload, "id")); break;
             default: throw new InvalidOperationException("Operação inválida.");
@@ -95,10 +112,18 @@ internal sealed class ManagementWebBridge
         return new { updated = true };
     }
 
-    private object CashData(string tab)
+    private object SalesData(JsonElement payload, DateTime start, DateTime end)
+    {
+        int pagina = payload.TryGetProperty("page",out _) ? Int(payload,"page") : 1;
+        long? limite = payload.TryGetProperty("snapshotId",out var snapshot) && snapshot.ValueKind==JsonValueKind.Number ? snapshot.GetInt64() : null;
+        var result = _sales.ListarHistoricoPaginado(start,end,Text(payload,"status") is { Length: > 0 } status ? status : null,pagina,100,limite);
+        return new { sales=result.Itens, pagination=new { page=result.Pagina,pageSize=result.Tamanho,total=result.Total,snapshotId=result.LimiteId,hasNext=result.TemProxima } };
+    }
+
+    private object CashData(string tab,DateTime start,DateTime end)
     {
         ResumoCaixa? current = _cash.ObterAberto();
-        return new { current, movements = tab == "history" || current is null ? new List<MovimentoCaixaLinha>() : _cash.ListarMovimentacoes(current.Id), history = tab == "history" ? _cash.ListarHistorico(200) : new List<HistoricoCaixaLinha>() };
+        return new { current, movements = tab == "history" || current is null ? new List<MovimentoCaixaLinha>() : _cash.ListarMovimentacoes(current.Id), history = tab == "history" ? _cash.ListarHistorico(start,end,200) : new List<HistoricoCaixaLinha>() };
     }
 
     private static object AdministratorData(Func<object> factory)

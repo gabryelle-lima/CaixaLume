@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text;
 
-namespace MercadinhoPdv.Diagnostics;
+namespace CaixaLume.Diagnostics;
 
 internal static class AppLogger
 {
@@ -9,7 +9,7 @@ internal static class AppLogger
     private static readonly ConcurrentQueue<string> PendingMetrics = new();
     private static int _drainingMetrics;
 
-    public static string LogPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MercadinhoPdv", "logs", "application.log");
+    public static string LogPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CaixaLume", "logs", "application.log");
 
     public static void Error(Exception exception, string operation)
     {

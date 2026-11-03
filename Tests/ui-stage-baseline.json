@@ -1,0 +1,9 @@
+{
+  "Services/Autorizacao.cs": "5421e145603a79467e46a1687d2df3f9b62ac1c71792d3c6836b5bc9124cba68",
+  "Services/UsuarioService.cs": "19536a948765c6174919215f588f5a10b38ff7990d3949a76c23c05bcd523261",
+  "Services/PagamentoService.cs": "69b64ef8e7b7f54a6b64d3d5383be538526430162edac087c5daaf3bc479feac",
+  "Services/VendaService.cs": "64b33adbddb5e0c7b298722d2879ae94cb6844319cf0e5e359a2c915db9f5b10",
+  "Data/VendaRepository.cs": "2ee75cb398d542c6e3cd04a76e557248e52e9dbc20b5b8b39c777220c7c4b4f4",
+  "Data/DatabaseInitializer.cs": "0ee6f3a709bb7a9a4d87149b9c74e6971f40d6f67a4df1ca371c20f1719f8cec",
+  "Services/EstoqueService.cs": "58de0319b8072be580453cc953eaf7fdc8d00f4918f61116741a0531c6961253"
+}

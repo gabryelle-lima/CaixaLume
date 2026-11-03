@@ -4,7 +4,7 @@
   const origin = location.origin;
   const channel = 'caixalume:shell:v1';
   const allowedPages = new Set(['home.html', 'index.html', 'products.html', 'reports.html', 'modules.html']);
-  const modules = new Set(['stock', 'cash', 'sales', 'expenses', 'suppliers', 'settings', 'users']);
+  const modules = new Set(['stock', 'invoices', 'cash', 'sales', 'expenses', 'suppliers', 'settings', 'users']);
   const frames = new Map();
   const requests = new Map();
   const screens = document.getElementById('screens');
@@ -28,7 +28,7 @@
     if (page === 'products.html' && url.searchParams.has('barcode')) {
       const barcode = url.searchParams.get('barcode');
       const returnToPdv = url.searchParams.get('return') === 'pdv';
-      if (!/^\d{8,14}$/.test(barcode) || [...url.searchParams.keys()].some(key => key !== 'barcode' && key !== 'return') || (url.searchParams.has('return') && !returnToPdv)) return null;
+      if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(barcode) || [...url.searchParams.keys()].some(key => key !== 'barcode' && key !== 'return') || (url.searchParams.has('return') && !returnToPdv)) return null;
       return { page, target: `${page}?barcode=${barcode}${returnToPdv ? '&return=pdv' : ''}`, barcode };
     }
     if (url.search) return null;
@@ -142,7 +142,7 @@
     if (!entry) return;
     window.clearTimeout(entry.timer);
     requests.delete(message.id);
-    if (message.ok && /^(products\.(save|setActive|delete)|pdv\.(checkout|openCash)|management\.(execute|restore))$/.test(entry.action)) invalidateOthers(entry.page);
+    if (message.ok && /^(products\.(save|setActive|delete)|pdv\.(checkout|openCash)|management\.(execute|restore)|stock\.invoice\.import)$/.test(entry.action)) invalidateOthers(entry.page);
     if (message.ok && entry.action === 'reports.getData') printHost.replaceChildren();
     const record = frames.get(entry.page);
     if (record?.frame.contentWindow === entry.source) entry.source.postMessage({ channel, kind: 'response', message }, origin);

@@ -7,6 +7,7 @@
     <title>Mercado · Visão geral</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./home.css" />
+      <link rel="stylesheet" href="./ui.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -20,6 +21,7 @@
           <button class="nav-item" data-module="stock" type="button"><span class="nav-icon">◫</span><span>Estoque</span></button>
           <button class="nav-item" data-module="cash" type="button"><span class="nav-icon">▣</span><span>Caixa</span></button>
           <button class="nav-item" data-module="sales" type="button"><span class="nav-icon">↗</span><span>Vendas</span></button>
+        <button class="nav-item" data-module="invoices" type="button" aria-label="Notas fiscais" title="Notas fiscais" hidden disabled><span class="nav-icon" aria-hidden="true">▣</span><span>Notas fiscais</span></button>
         </nav>
         <div class="sidebar-bottom">
           <button class="nav-item" data-module="expenses" type="button"><span class="nav-icon">▧</span><span>Despesas</span></button>
@@ -61,6 +63,7 @@
       </main>
     </div>
     <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
-    <script src="./bridge.js" defer></script><script src="./ui.js" defer></script><script src="./home.js" defer></script>
+    <script src="./bridge.js" defer></script><script src="./ui-input.js" defer></script>
+    <script src="./ui.js" defer></script><script src="./home.js" defer></script>
   </body>
 </html>

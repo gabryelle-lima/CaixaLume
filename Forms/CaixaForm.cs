@@ -1,8 +1,8 @@
 using System.Globalization;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class CaixaForm : Form
 {
@@ -46,7 +46,7 @@ internal sealed class CaixaForm : Form
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(20), ColumnCount = 1, RowCount = 4 };
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 72));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         var header = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false };
         header.Controls.Add(new Label { Text = "STATUS DO CAIXA", Font = new Font("Segoe UI", 11), AutoSize = true });
@@ -59,7 +59,7 @@ internal sealed class CaixaForm : Form
         summary.Controls.Add(SummaryMetric("SUPRIMENTOS", _supplyTotal));
         summary.Controls.Add(SummaryMetric("SANGRIAS", _withdrawalTotal));
         summary.Controls.Add(SummaryMetric("DESPESAS EM DINHEIRO", _expenseTotal));
-        var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true, Padding = new Padding(0, 8, 0, 0) };
+        var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(0, 8, 0, 0) };
         actions.Controls.AddRange([_open, _supply, _withdrawal, _expense, _close, _history]);
         _grid.Dock = DockStyle.Fill;
         _grid.ReadOnly = true;
@@ -218,7 +218,7 @@ internal sealed class CaixaForm : Form
         RefreshStatus();
     }
 
-    private static bool TryParseAmount(string input, out decimal amount) => PagamentoService.TryParseValor(input, out amount) && amount >= 0;
+    private static bool TryParseAmount(string input, out decimal amount) => EntradaNumerica.TryParseDinheiro(input, out amount) && amount >= 0;
 
     private void ShowError(Exception exception, string title) => UiDialog.Warning(this, title, exception.Message);
 }

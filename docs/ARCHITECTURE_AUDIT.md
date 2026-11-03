@@ -1,4 +1,4 @@
-# Auditoria de arquitetura — Mercadinho PDV
+# Auditoria de arquitetura — CaixaLume
 
 Data da avaliação: 2026-10-08.
 
@@ -11,7 +11,7 @@ Atualização de implementação em 18/10/2026: a rodada de estabilização mant
 - `Services/` concentra regras e casos de uso, mas algumas classes também abrem o banco diretamente; outras delegam a repositórios em `Data/`.
 - `Data/` contém repositórios SQLite, inicialização do banco e acesso nativo por `winsqlite3.dll`. O caminho do banco pode ser substituído por `MERCADINHOPDV_DATABASE`, útil para testes isolados.
 - `Models/` contém modelos usados tanto pela interface quanto pelos serviços. `SessaoUsuario` é estado estático global.
-- `Tests/MercadinhoPdv.IntegrationTests/` é um executável de integração com banco temporário, não uma biblioteca de testes convencional.
+- `Tests/CaixaLume.IntegrationTests/` é um executável de integração com banco temporário, não uma biblioteca de testes convencional.
 
 Fluxo representativo: `FormPDV → VendaService → VendaRepository → DatabaseConnection`; outros formulários seguem `Form → Service → DatabaseConnection` diretamente. A validação de regras existe nos serviços e no caminho transacional da venda, mas a fronteira não é uniforme.
 

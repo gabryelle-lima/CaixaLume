@@ -1,4 +1,4 @@
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class DespesaDialog : Form
 {

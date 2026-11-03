@@ -6,6 +6,7 @@
     <meta name="color-scheme" content="dark" />
     <title>Mercado · Ponto de venda</title>
     <link rel="stylesheet" href="./styles.css" />
+      <link rel="stylesheet" href="./ui.css" />
   </head>
   <body>
     <div class="app-shell">
@@ -19,6 +20,7 @@
           <button class="nav-item" data-module="stock" type="button"><span class="nav-icon">◫</span><span>Estoque</span></button>
           <button class="nav-item" data-module="cash" type="button"><span class="nav-icon">▣</span><span>Caixa</span></button>
           <button class="nav-item" data-module="sales" type="button"><span class="nav-icon">↗</span><span>Vendas</span></button>
+        <button class="nav-item" data-module="invoices" type="button" aria-label="Notas fiscais" title="Notas fiscais" hidden disabled><span class="nav-icon" aria-hidden="true">▣</span><span>Notas fiscais</span></button>
         </nav>
         <div class="sidebar-bottom"><button class="nav-item" data-module="expenses" type="button"><span class="nav-icon">▧</span><span>Despesas</span></button><button class="nav-item" data-page="reports.html" type="button"><span class="nav-icon">▥</span><span>Relatórios</span></button><button class="nav-item" data-module="suppliers" type="button"><span class="nav-icon">♧</span><span>Fornecedores</span></button><button class="nav-item" data-module="settings" type="button"><span class="nav-icon">⚙</span><span>Configurações</span></button><button class="nav-item" data-module="users" type="button"><span class="nav-icon">♙</span><span>Usuários</span></button><button class="nav-item" id="logout-button" type="button"><span class="nav-icon">⇥</span><span>Sair</span></button><span class="connection-dot"></span><span>Aplicativo local · offline</span></div>
       </aside>
@@ -61,7 +63,7 @@
       <form method="dialog" class="modal-card" id="payment-form">
         <div class="modal-header"><div><div class="eyebrow">FINALIZAR VENDA</div><h2 id="payment-title">Pagamento</h2></div><button class="icon-button" type="button" data-close aria-label="Fechar">×</button></div>
         <div class="payment-total"><span>Total da venda</span><strong id="payment-total">R$ 0,00</strong></div>
-        <p class="modal-description">Confira o recebimento antes de registrar. Pix e cartão são processados fora do sistema.</p>
+        <p class="modal-description">Atalhos: F6 dinheiro · F7 Pix · F8 débito · F9 crédito. Confira o recebimento antes de registrar. Pix e cartão são processados fora do sistema.</p>
         <fieldset class="payment-methods"><legend>Forma de pagamento</legend>
           <label class="payment-option selected"><input type="radio" name="payment-method" value="DINHEIRO" checked /><span class="method-icon">▤</span>Dinheiro</label>
           <label class="payment-option"><input type="radio" name="payment-method" value="PIX" /><span class="method-icon">⌗</span>Pix</label>
@@ -105,6 +107,7 @@
       <p id="adjustment-error" class="form-error" role="alert"></p><button class="button button-primary" type="submit">Aplicar à venda</button>
     </form></dialog>
     <script src="./bridge.js" defer></script>
+    <script src="./ui-input.js" defer></script>
     <script src="./ui.js" defer></script>
     <script src="./pdv-domain.js" defer></script>
     <script src="./app.js" defer></script>

@@ -1,11 +1,11 @@
-namespace MercadinhoPdv.Data;
+namespace CaixaLume.Data;
 
 public static class DatabaseInitializer
 {
-    private const int CurrentSchemaVersion = 4;
-    public static string DatabasePath { get; } = Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE") is { Length: > 0 } overridePath
+    private const int CurrentSchemaVersion = 8;
+    public static string DatabasePath { get; } = CaminhosAplicacao.BancoConfigurado is { Length: > 0 } overridePath
         ? Path.GetFullPath(overridePath)
-        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MercadinhoPdv", "dados", "mercadinho.db");
+        : CaminhosAplicacao.BancoProducao;
 
     public static void Initialize() => Initialize(DatabasePath);
 
@@ -14,7 +14,7 @@ public static class DatabaseInitializer
         Directory.CreateDirectory(Path.GetDirectoryName(databasePath)!);
         bool hadDatabase = File.Exists(databasePath) && new FileInfo(databasePath).Length > 0;
         using var database = new DatabaseConnection(databasePath);
-        
+
         bool hasMigrationTable = database.Query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='SchemaMigrations' LIMIT 1;").Count > 0;
         int currentVersion = hasMigrationTable ? Convert.ToInt32(database.Query("SELECT COALESCE(MAX(Version),0) AS Version FROM SchemaMigrations;").Single()["Version"]) : 0;
         if (currentVersion > CurrentSchemaVersion) throw new InvalidOperationException($"O banco está na versão {currentVersion}, superior à versão suportada {CurrentSchemaVersion} por este aplicativo.");
@@ -86,9 +86,6 @@ public static class DatabaseInitializer
             {
                 database.Execute("BEGIN IMMEDIATE;");
                 EnsureColumn(database, "Produtos", "ExcluidoEm", "TEXT");
-                var owners = database.Query("SELECT Id FROM Usuarios WHERE UPPER(TRIM(Nome))='GABRYELLE' AND UPPER(Perfil)='ADMINISTRADOR' AND Ativo=1;");
-                if (owners.Count == 1)
-                    database.Execute("INSERT OR IGNORE INTO Configuracoes (Chave,Valor) VALUES ('ProdutoExcluirUsuarioId',@Id);", new Dictionary<string, object?> { ["@Id"] = owners[0]["Id"] });
                 database.Execute("INSERT INTO SchemaMigrations (Version,AppliedAt) VALUES (4,@Data);", new Dictionary<string, object?> { ["@Data"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
                 database.Execute("COMMIT;");
             }
@@ -98,6 +95,155 @@ public static class DatabaseInitializer
                 catch (Exception rollback) { exception.Data["MigrationRollback"] = rollback.ToString(); }
                 throw new InvalidOperationException($"A migração v4 foi revertida. Cópia de segurança: {safetyCopy ?? "banco novo"}", exception);
             }
+        }
+        if (currentVersion < 5)
+        {
+            try
+            {
+                database.Execute("BEGIN IMMEDIATE;");
+                database.ExecuteScript("""
+                    CREATE TABLE IF NOT EXISTS NfeImports (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Chave TEXT NOT NULL UNIQUE,
+                        Numero TEXT NOT NULL,
+                        Serie TEXT NOT NULL,
+                        DataEmissao TEXT NOT NULL,
+                        ImportadaEm TEXT NOT NULL,
+                        FornecedorId INTEGER NOT NULL,
+                        FornecedorNome TEXT NOT NULL,
+                        FornecedorCnpj TEXT NOT NULL,
+                        DestinatarioNome TEXT NOT NULL,
+                        DestinatarioCnpj TEXT NOT NULL,
+                        ValorTotal NUMERIC NOT NULL,
+                        Protocolo TEXT NOT NULL,
+                        XmlOriginal TEXT NOT NULL,
+                        UsuarioId INTEGER NOT NULL,
+                        FOREIGN KEY (FornecedorId) REFERENCES Fornecedores(Id),
+                        FOREIGN KEY (UsuarioId) REFERENCES Usuarios(Id)
+                    );
+                    CREATE INDEX IF NOT EXISTS IX_NfeImports_ImportadaEm ON NfeImports(ImportadaEm);
+                    CREATE TABLE IF NOT EXISTS NfeImportItems (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        NfeImportId INTEGER NOT NULL,
+                        NumeroItem INTEGER NOT NULL,
+                        CodigoFornecedor TEXT NOT NULL,
+                        NomeXml TEXT NOT NULL,
+                        Gtin TEXT,
+                        UnidadeXml TEXT NOT NULL,
+                        QuantidadeXml NUMERIC NOT NULL,
+                        ValorUnitarioXml NUMERIC NOT NULL,
+                        ValorTotalXml NUMERIC NOT NULL,
+                        ProdutoId INTEGER NOT NULL,
+                        QuantidadeEstoque NUMERIC NOT NULL,
+                        UnidadeEstoque TEXT NOT NULL,
+                        CustoUnitario NUMERIC NOT NULL,
+                        MovimentacaoId INTEGER,
+                        UNIQUE (NfeImportId, NumeroItem),
+                        FOREIGN KEY (NfeImportId) REFERENCES NfeImports(Id),
+                        FOREIGN KEY (ProdutoId) REFERENCES Produtos(Id),
+                        FOREIGN KEY (MovimentacaoId) REFERENCES MovimentacoesEstoque(Id)
+                    );
+                    CREATE INDEX IF NOT EXISTS IX_NfeImportItems_ProdutoId ON NfeImportItems(ProdutoId);
+                    """);
+                database.Execute("INSERT INTO SchemaMigrations (Version,AppliedAt) VALUES (5,@Data);", new Dictionary<string, object?> { ["@Data"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+                database.Execute("COMMIT;");
+            }
+            catch (Exception exception)
+            {
+                try { database.Execute("ROLLBACK;"); }
+                catch (Exception rollback) { exception.Data["MigrationRollback"] = rollback.ToString(); }
+                throw new InvalidOperationException($"A migração v5 foi revertida. Cópia de segurança: {safetyCopy ?? "banco novo"}", exception);
+            }
+        }
+        if (currentVersion < 6)
+        {
+            database.Execute("BEGIN IMMEDIATE;");
+            try
+            {
+                database.ExecuteScript("""
+                    INSERT OR IGNORE INTO Configuracoes (Chave,Valor)
+                    SELECT 'Permissao:PRODUTO_EXCLUIR:Perfil:ADMINISTRADOR',
+                        CASE WHEN EXISTS (SELECT 1 FROM Configuracoes WHERE Chave='ProdutoExcluirUsuarioId') THEN '0' ELSE '1' END;
+                    INSERT OR IGNORE INTO Configuracoes (Chave,Valor)
+                    SELECT 'Permissao:PRODUTO_EXCLUIR:Usuario:' || U.Id, '1'
+                    FROM Usuarios U JOIN Configuracoes C ON C.Chave='ProdutoExcluirUsuarioId' AND C.Valor=CAST(U.Id AS TEXT);
+                    CREATE TRIGGER IF NOT EXISTS Usuarios_ProtegerUltimoAdmin_Update
+                    BEFORE UPDATE OF Ativo,Perfil,SenhaHash ON Usuarios
+                    WHEN OLD.Ativo=1 AND UPPER(TRIM(OLD.Perfil))='ADMINISTRADOR'
+                        AND (NEW.Ativo<>1 OR UPPER(TRIM(NEW.Perfil))<>'ADMINISTRADOR' OR COALESCE(NEW.SenhaHash,'')='')
+                        AND NOT EXISTS (SELECT 1 FROM Usuarios WHERE Id<>OLD.Id AND Ativo=1 AND UPPER(TRIM(Perfil))='ADMINISTRADOR' AND COALESCE(SenhaHash,'')<>'')
+                    BEGIN SELECT RAISE(ABORT,'Mantenha pelo menos um administrador ativo.'); END;
+                    CREATE TRIGGER IF NOT EXISTS Usuarios_ProtegerUltimoAdmin_Delete
+                    BEFORE DELETE ON Usuarios
+                    WHEN OLD.Ativo=1 AND UPPER(TRIM(OLD.Perfil))='ADMINISTRADOR'
+                        AND NOT EXISTS (SELECT 1 FROM Usuarios WHERE Id<>OLD.Id AND Ativo=1 AND UPPER(TRIM(Perfil))='ADMINISTRADOR' AND COALESCE(SenhaHash,'')<>'')
+                    BEGIN SELECT RAISE(ABORT,'Mantenha pelo menos um administrador ativo.'); END;
+                    """);
+                database.Execute("INSERT INTO SchemaMigrations (Version,AppliedAt) VALUES (6,@Data);", new Dictionary<string, object?> { ["@Data"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+                database.Execute("COMMIT;");
+            }
+            catch { database.Execute("ROLLBACK;"); throw; }
+        }
+        if (currentVersion < 7)
+        {
+            database.Execute("BEGIN IMMEDIATE;");
+            try
+            {
+                database.ExecuteScript("""
+                    CREATE TABLE IF NOT EXISTS PagamentosVenda (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        VendaId INTEGER NOT NULL REFERENCES Vendas(Id),
+                        Forma TEXT NOT NULL CHECK (Forma IN ('DINHEIRO','PIX','DÉBITO','CRÉDITO')),
+                        ValorCentavos INTEGER NOT NULL CHECK (ValorCentavos>=0),
+                        RecebidoCentavos INTEGER NOT NULL CHECK (RecebidoCentavos>=ValorCentavos),
+                        Origem TEXT NOT NULL DEFAULT 'MANUAL' CHECK (Origem='MANUAL'),
+                        Status TEXT NOT NULL DEFAULT 'REGISTRADO_MANUALMENTE' CHECK (Status='REGISTRADO_MANUALMENTE'),
+                        UNIQUE(VendaId,Forma)
+                    );
+                    INSERT OR IGNORE INTO PagamentosVenda (VendaId,Forma,ValorCentavos,RecebidoCentavos)
+                    SELECT Id,FormaPagamento,CAST(ROUND(ValorTotal*100) AS INTEGER),
+                        CAST(ROUND((ValorTotal + CASE WHEN FormaPagamento='DINHEIRO' THEN COALESCE(Troco,0) ELSE 0 END)*100) AS INTEGER)
+                    FROM Vendas WHERE FormaPagamento IN ('DINHEIRO','PIX','DÉBITO','CRÉDITO');
+                    """);
+                database.Execute("INSERT INTO SchemaMigrations (Version,AppliedAt) VALUES (7,@Data);", new Dictionary<string, object?> { ["@Data"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+                database.Execute("COMMIT;");
+            }
+            catch { database.Execute("ROLLBACK;"); throw; }
+        }
+        if (currentVersion < 8)
+        {
+            database.Execute("BEGIN IMMEDIATE;");
+            try
+            {
+                EnsureColumn(database, "Produtos", "Versao", "INTEGER NOT NULL DEFAULT 0");
+                EnsureColumn(database, "MovimentacoesEstoque", "SaldoAnterior", "NUMERIC");
+                EnsureColumn(database, "MovimentacoesEstoque", "SaldoPosterior", "NUMERIC");
+                database.ExecuteScript("""
+                    CREATE TRIGGER IF NOT EXISTS Produtos_Versao AFTER UPDATE ON Produtos
+                    WHEN NEW.Versao=OLD.Versao
+                    BEGIN UPDATE Produtos SET Versao=OLD.Versao+1 WHERE Id=NEW.Id; END;
+                    CREATE INDEX IF NOT EXISTS IX_Produtos_CodigoNormalizado ON Produtos(TRIM(CodigoBarras));
+                    CREATE TRIGGER IF NOT EXISTS Produtos_Codigo_Insert BEFORE INSERT ON Produtos
+                    WHEN TRIM(COALESCE(NEW.CodigoBarras,''))<>'' AND EXISTS
+                        (SELECT 1 FROM Produtos WHERE TRIM(CodigoBarras)=TRIM(NEW.CodigoBarras))
+                    BEGIN SELECT RAISE(ABORT,'Já existe um produto com este código de barras.'); END;
+                    CREATE TRIGGER IF NOT EXISTS Produtos_Codigo_Update BEFORE UPDATE OF CodigoBarras ON Produtos
+                    WHEN TRIM(COALESCE(NEW.CodigoBarras,''))<>'' AND EXISTS
+                        (SELECT 1 FROM Produtos WHERE Id<>OLD.Id AND TRIM(CodigoBarras)=TRIM(NEW.CodigoBarras))
+                    BEGIN SELECT RAISE(ABORT,'Já existe um produto com este código de barras.'); END;
+                    CREATE INDEX IF NOT EXISTS IX_Vendas_Data_Id ON Vendas(DataVenda,Id);
+                    CREATE INDEX IF NOT EXISTS IX_Vendas_Status_Data_Id ON Vendas(Status,DataVenda,Id);
+                    CREATE INDEX IF NOT EXISTS IX_ItensVenda_ProdutoId ON ItensVenda(ProdutoId);
+                    CREATE INDEX IF NOT EXISTS IX_MovEstoque_Produto_Id ON MovimentacoesEstoque(ProdutoId,Id);
+                    CREATE INDEX IF NOT EXISTS IX_MovEstoque_Data_Id ON MovimentacoesEstoque(DataMovimentacao,Id);
+                    CREATE INDEX IF NOT EXISTS IX_MovEstoque_Documento ON MovimentacoesEstoque(Documento);
+                    CREATE INDEX IF NOT EXISTS IX_Produtos_Validade ON Produtos(DataValidade) WHERE Ativo=1 AND ExcluidoEm IS NULL AND DataValidade IS NOT NULL;
+                    CREATE INDEX IF NOT EXISTS IX_Produtos_EstoqueBaixo ON Produtos(EstoqueAtual,Nome) WHERE Ativo=1 AND ExcluidoEm IS NULL AND EstoqueAtual<=EstoqueMinimo;
+                    """);
+                database.Execute("INSERT INTO SchemaMigrations (Version,AppliedAt) VALUES (8,@Data);", new Dictionary<string,object?> { ["@Data"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") });
+                database.Execute("COMMIT;");
+            }
+            catch { database.Execute("ROLLBACK;"); throw; }
         }
     }
 

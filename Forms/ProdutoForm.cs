@@ -1,9 +1,9 @@
-using MercadinhoPdv.Diagnostics;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Diagnostics;
+using CaixaLume.Models;
+using CaixaLume.Services;
 using System.Net.Http;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class ProdutoForm : Form
 {

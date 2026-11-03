@@ -1,8 +1,8 @@
 using System.Globalization;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
+using CaixaLume.Data;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class CaixaService
 {
@@ -47,6 +47,7 @@ public sealed class CaixaService
         db.Execute("BEGIN IMMEDIATE;");
         try
         {
+            Autorizacao.ExigirUsuario(db);
             if (db.Query("SELECT Id FROM Caixa WHERE Status = 'Aberto' LIMIT 1;").Count > 0) throw new InvalidOperationException("Já existe um caixa aberto.");
             db.Execute("INSERT INTO Caixa (DataAbertura, SaldoInicial, Status, UsuarioAberturaId) VALUES (@Data, @Saldo, 'Aberto', @Usuario);", new Dictionary<string, object?> { ["@Data"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), ["@Saldo"] = saldoInicial, ["@Usuario"] = SessaoUsuario.UsuarioId });
             long id = db.LastInsertRowId;
@@ -68,6 +69,7 @@ public sealed class CaixaService
         db.Execute("BEGIN IMMEDIATE;");
         try
         {
+            Autorizacao.ExigirUsuario(db);
             var row = db.Query("SELECT Id FROM Caixa WHERE Status = 'Aberto' ORDER BY Id DESC LIMIT 1;").FirstOrDefault() ?? throw new InvalidOperationException("Não há caixa aberto.");
             long id = ToLong(row["Id"]);
             if (tipo == "SANGRIA" && CriarResumo(db, id).ValorEsperadoDinheiro < valor) throw new InvalidOperationException("A sangria não pode superar o dinheiro disponível no caixa.");
@@ -90,6 +92,7 @@ public sealed class CaixaService
         db.Execute("BEGIN IMMEDIATE;");
         try
         {
+            Autorizacao.ExigirUsuario(db);
             var row = db.Query("SELECT Id FROM Caixa WHERE Status = 'Aberto' ORDER BY Id DESC LIMIT 1;").FirstOrDefault() ?? throw new InvalidOperationException("Não há caixa aberto para registrar a despesa.");
             long id = ToLong(row["Id"]);
             if (formaPagamento == "DINHEIRO" && CriarResumo(db, id).ValorEsperadoDinheiro < valor) throw new InvalidOperationException("O dinheiro disponível no caixa é insuficiente para essa despesa.");
@@ -108,6 +111,7 @@ public sealed class CaixaService
         db.Execute("BEGIN IMMEDIATE;");
         try
         {
+            Autorizacao.ExigirUsuario(db);
             var row = db.Query("SELECT Id FROM Caixa WHERE Status = 'Aberto' ORDER BY Id DESC LIMIT 1;").FirstOrDefault() ?? throw new InvalidOperationException("Não há caixa aberto para fechar.");
             long id = ToLong(row["Id"]);
             ResumoCaixa summary = CriarResumo(db, id);
@@ -189,6 +193,6 @@ public sealed class CaixaService
         };
     }
 
-    private static decimal ToDecimal(object? value) => Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+    private static decimal ToDecimal(object? value) => ValoresMonetarios.Arredondar(Convert.ToDecimal(value, CultureInfo.InvariantCulture));
     private static long ToLong(object? value) => Convert.ToInt64(value, CultureInfo.InvariantCulture);
 }

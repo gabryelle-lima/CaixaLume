@@ -9,13 +9,7 @@
   const cartItems = () => [...state.cart.values()];
   const moneyRound = value => Math.round((value + Number.EPSILON) * 100) / 100;
   const formatMoneyInput = value => moneyRound(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const parseMoneyInput = value => {
-    const raw = String(value ?? '').trim().replace(/^R\$\s*/, '').replace(/\s/g, '');
-    const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
-    if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return NaN;
-    const amount = Number(normalized);
-    return Number.isFinite(amount) && amount <= 1000000000 ? amount : NaN;
-  };
+  const parseMoneyInput = value => { try { return window.MercadoInput.decimal(value,2); } catch { return NaN; } };
   const itemTotal = item => domain.itemCents(item) / 100;
   const pricing = () => domain.totals(cartItems(), state.adjustment, state.policy, state.role);
   const total = () => pricing().total;
@@ -112,20 +106,44 @@
     });
   }
 
+  const thumbnails=new Map(), imageQueue=new Map();let imageLoading=false;
+  const imageObserver=new IntersectionObserver(entries=>{
+    for(const entry of entries)if(entry.isIntersecting){imageObserver.unobserve(entry.target);imageQueue.set(entry.target,Number(entry.target.dataset.productId));}
+    if(imageQueue.size)requestAnimationFrame(loadImages);
+  },{root:elements['product-grid'],rootMargin:'96px'});
+  async function loadImages(){
+    if(imageLoading || !imageQueue.size)return;imageLoading=true;
+    for(const [img] of imageQueue)if(!img.isConnected)imageQueue.delete(img);
+    const batch=[...imageQueue].slice(0,16);for(const [img] of batch)imageQueue.delete(img);
+    try{
+      const data=await request('pdv.getImages',{ids:batch.map(([,id])=>id)});
+      for(const [img,id] of batch){const src=data[id];if(src){thumbnails.set(img.dataset.imageKey,src);while(thumbnails.size>128)thumbnails.delete(thumbnails.keys().next().value);if(img.isConnected)img.src=src;}else if(img.isConnected)img.replaceWith(element('span','product-visual','◇'));}
+    }catch{for(const [img] of batch)if(img.isConnected)img.replaceWith(element('span','product-visual','◇'));}
+    finally{imageLoading=false;if(imageQueue.size)requestAnimationFrame(loadImages);}
+  }
+  let searchFrame=0;
+  function scheduleProducts(){cancelAnimationFrame(searchFrame);searchFrame=requestAnimationFrame(renderProducts);}
+
   function renderProducts() {
-    const host = elements['product-grid']; host.replaceChildren();
-    const query = elements['product-search'].value.trim().toLocaleLowerCase('pt-BR');
-    const filtered = state.products.filter(product => (state.category === 'TODOS' || product.category.toLocaleLowerCase('pt-BR') === state.category.toLocaleLowerCase('pt-BR')) && (!query || product.name.toLocaleLowerCase('pt-BR').includes(query) || product.barcode.includes(query)));
+    const host = elements['product-grid']; imageObserver.disconnect(); imageQueue.clear(); host.replaceChildren();
+    const query = elements['product-search'].value.trim();
+    const normalized=window.MercadoInput.normalizeSearch(query);
+    const filtered = state.products.filter(product => product.stock > 0 && (state.category === 'TODOS' || product.category.toLocaleLowerCase('pt-BR') === state.category.toLocaleLowerCase('pt-BR')) && (!query || product.searchName.includes(normalized) || product.barcode.includes(query)));
     elements['result-count'].textContent = `${filtered.length} ${filtered.length === 1 ? 'produto' : 'produtos'}`;
     if (!filtered.length) {
-      const empty = element('div', 'empty-state'); empty.append(element('span', 'empty-icon', '⌕'), element('strong', '', state.products.length ? 'Nenhum produto encontrado' : 'Catálogo vazio'), element('small', '', state.products.length ? 'Tente outra busca ou categoria.' : 'Cadastre produtos para começar a vender.')); host.append(empty); return;
+      const empty = element('div', 'empty-state'); empty.append(element('span', 'empty-icon', '⌕'), element('strong', '', state.products.length ? 'Nenhum produto disponível' : 'Catálogo vazio'), element('small', '', state.products.length ? 'Tente outra busca ou categoria. Produtos sem estoque ficam ocultos.' : 'Cadastre produtos para começar a vender.')); host.append(empty); return;
     }
     const fragment = document.createDocumentFragment();
     filtered.slice(0, state.visibleLimit).forEach(product => {
       const card = element('button', 'product-card'); card.type = 'button'; card.setAttribute('aria-label', `Adicionar ${product.name}, ${currency(product.price)} por ${product.unit}`);
       const top = element('span', 'product-top');
-      const visual = product.imageData ? document.createElement('img') : element('span', 'product-visual', '◇');
-      if (product.imageData) { visual.className = 'product-visual'; visual.alt = ''; visual.src = product.imageData; }
+      const visual = product.hasImage || product.imageData ? document.createElement('img') : element('span', 'product-visual', '◇');
+      if (product.hasImage || product.imageData) {
+        visual.className='product-visual';visual.alt='';visual.width=visual.height=41;visual.decoding='async';
+        const key=`${product.id}:${product.imageVersion}`;visual.dataset.productId=product.id;visual.dataset.imageKey=key;
+        const cached=product.imageData||thumbnails.get(key);if(cached)visual.src=cached;else imageObserver.observe(visual);
+        visual.addEventListener('error',()=>visual.replaceWith(element('span','product-visual','◇')),{once:true});
+      }
       const category = element('span', 'product-category', product.category);
       top.append(visual, category);
       const name = element('span', 'product-name', product.name);
@@ -218,10 +236,13 @@
     if (user) { elements['user-label'].textContent = user.name; elements['user-role'].textContent = user.role; elements['user-avatar'].textContent = (user.name.trim()[0] || 'M').toLocaleUpperCase('pt-BR'); }
   }
 
-  async function loadData() {
+  let currentLoad=null;
+  function loadData(){if(currentLoad)return currentLoad;currentLoad=fetchData().finally(()=>currentLoad=null);return currentLoad;}
+  async function fetchData() {
     const started = performance.now();
     try {
-      const data = await request('pdv.getData'); state.products = data.products || []; state.categories = data.categories || ['TODOS'];
+      const data = await request('pdv.getData'); state.products = (data.products || []).map(p=>({...p,searchName:window.MercadoInput.normalizeSearch(p.name)})); state.categories = data.categories || ['TODOS'];
+      window.MercadoUi.updateInvoiceNavigation(data.userRole);
       state.policy = data.adjustmentsPolicy || {}; state.role = data.userRole || 'OPERADOR';
       state.draftKey = Number.isInteger(data.userId) && data.userId > 0 ? `mercado-pdv-draft-${data.userId}` : null;
       restoreDraft();
@@ -247,6 +268,7 @@
   }
 
   function openPayment() {
+    if (document.activeElement?.matches?.('input.quantity-value')) document.activeElement.blur();
     if (state.busy || document.querySelector('dialog[open]')) return;
     if (state.checkoutCancelledId !== null) { showCheckoutStatus(); return; }
     if (!state.cart.size) return;
@@ -267,6 +289,8 @@
     elements['payment-form'].querySelectorAll('.payment-option').forEach(option => option.classList.toggle('selected', option.querySelector('input').checked));
     const isCash = method === 'DINHEIRO'; elements['received-label'].hidden = !isCash; elements['amount-received'].closest('.money-input').hidden = !isCash; elements['change-value'].closest('.change-row').hidden = !isCash; document.getElementById('money-help').hidden = !isCash;
     const amount = parseMoneyInput(elements['amount-received'].value); elements['change-value'].textContent = currency(Math.max(0, amount - total()));
+    elements['confirm-payment'].disabled=state.busy || (!state.checkoutId && (!method || (isCash && (!Number.isFinite(amount)||amount<total()))));
+    document.getElementById('money-help').textContent=isCash && !Number.isFinite(amount) && elements['amount-received'].value ? 'Valor inválido. Use 14,27 ou 14.27, sem separadores ambíguos.' : isCash && Number.isFinite(amount) && amount<total() ? 'O valor recebido precisa cobrir o total da venda.' : 'Use vírgula ou ponto para centavos. Exemplo: 14,27.';
     elements['confirm-payment'].firstElementChild.textContent = state.checkoutId ? 'Consultar a mesma venda' : method ? `Registrar ${currency(total())} em ${method.toLocaleLowerCase('pt-BR')}` : 'Selecione a forma de pagamento';
   }
 
@@ -363,15 +387,15 @@
     finally { elements['open-cash'].disabled = false; }
   }
 
-  elements['product-search'].addEventListener('input', () => { state.visibleLimit = 250; renderProducts(); });
+  elements['product-search'].addEventListener('input', () => { state.visibleLimit = 250; scheduleProducts(); });
   elements['product-search'].addEventListener('keydown', event => {
-    if (event.key !== 'Enter') return;
+    if (event.key !== 'Enter' || event.isComposing) return;
     event.preventDefault(); if (event.repeat || !canEdit()) return;
     const query = elements['product-search'].value.trim(); const result = domain.resolveProduct(state.products, query);
     if (result.kind === 'found') {
       if (addProduct(result.product)) { elements['product-search'].value = ''; renderProducts(); elements['product-search'].focus(); }
     } else if (result.kind === 'ambiguous') notify('Há mais de um produto. Selecione o item correto na grade.', true);
-    else if (result.kind === 'notFound') { document.getElementById('unknown-code').textContent = query; document.getElementById('unknown-modal').showModal(); }
+    else if (result.kind === 'notFound') { document.getElementById('unknown-code').textContent = query; document.getElementById('lookup-product').textContent=state.role==='ADMINISTRADOR'?'Cadastrar este produto':'Consultar produto';document.getElementById('unknown-modal').showModal();document.getElementById('lookup-product').focus(); }
   });
   elements['clear-cart'].addEventListener('click', () => {
     if (!canEdit() || !state.cart.size) return;
@@ -390,7 +414,7 @@
   });
   document.getElementById('retry-checkout').addEventListener('click', openPayment);
   document.getElementById('discard-cancelled-checkout').addEventListener('click', async () => {
-    if (state.checkoutCancelledId === null || !window.confirm(`A venda #${state.checkoutCancelledId} está cancelada. Você conferiu o histórico e deseja limpar esta tentativa?`)) return;
+    if (state.checkoutCancelledId === null || !await window.MercadoUi.confirm(`A venda #${state.checkoutCancelledId} está cancelada. Você conferiu o histórico e deseja limpar esta tentativa?`,{title:'Encerrar tentativa cancelada',destructive:true})) return;
     state.checkoutId = null; state.checkoutOutcomeUncertain = false; state.checkoutCancelledId = null; state.adjustment = {};
     state.cart.clear(); renderCart(); await loadData();
     notify('Tentativa cancelada encerrada. Você pode iniciar outra venda.');
@@ -425,9 +449,9 @@
     const barcode = document.getElementById('unknown-code').textContent;
     document.getElementById('unknown-modal').close();
     if (state.checkoutId) { showCheckoutStatus(); return; }
-    state.pendingBarcode = barcode;
+    state.pendingBarcode = /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(barcode)?barcode:null;
     saveDraft();
-    window.MercadoBridge.navigate(`products.html?barcode=${encodeURIComponent(barcode)}&return=pdv`);
+    window.MercadoBridge.navigate(state.pendingBarcode?`products.html?barcode=${encodeURIComponent(barcode)}&return=pdv`:'products.html');
   });
   document.getElementById('edit-adjustments').addEventListener('click', () => {
     if (!canEdit()) return;
@@ -491,9 +515,17 @@
   }));
   document.getElementById('logout-button')?.addEventListener('click', async () => {
     if (state.checkoutId) { notify('Consulte a venda pendente antes de encerrar a sessão.', true); return; }
-    if (state.cart.size && !window.confirm('Descartar a venda em andamento e sair?')) return;
+    if (state.cart.size && !await window.MercadoUi.confirm('Descartar a venda em andamento e sair?',{title:'Sair do PDV',destructive:true})) return;
     try { await request('session.logout'); if (state.draftKey) localStorage.removeItem(state.draftKey); }
     catch (error) { notify(error.message, true); }
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.repeat || event.ctrlKey || event.metaKey)return;
+    const methodKeys={F6:'DINHEIRO',F7:'PIX',F8:'DÉBITO',F9:'CRÉDITO'};
+    if(elements['payment-modal'].open && methodKeys[event.key] && !state.checkoutId && !state.busy){
+      event.preventDefault();const radio=[...elements['payment-form'].querySelectorAll('[name="payment-method"]')].find(r=>r.value===methodKeys[event.key]);radio.checked=true;updatePaymentMethod();
+      const target=radio.value==='DINHEIRO'?elements['amount-received']:elements['confirm-payment'];target.focus();if(target.select)target.select();
+    }
   });
   document.addEventListener('keydown', event => { if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return; if (event.key === 'F2' && !document.querySelector('dialog[open]')) { event.preventDefault(); elements['product-search'].focus(); elements['product-search'].select(); } if (event.key === 'F4' && !document.querySelector('dialog[open]')) { event.preventDefault(); openPayment(); } });
 

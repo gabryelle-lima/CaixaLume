@@ -1,4 +1,4 @@
-namespace MercadinhoPdv.Models;
+namespace CaixaLume.Models;
 
 public sealed class ResumoCaixa
 {

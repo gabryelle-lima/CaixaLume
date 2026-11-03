@@ -1,7 +1,7 @@
 using System.Globalization;
-using MercadinhoPdv.Data;
+using CaixaLume.Data;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class DespesasService
 {

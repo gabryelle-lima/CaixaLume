@@ -96,6 +96,7 @@
     try {
       const data = await request('reports.getData', { start, end }); if (sequence !== state.loadSequence) return; state.report = data.report; state.start = start; state.end = end;
       $('store-name').textContent = data.storeName; $('breadcrumb-store').textContent = data.storeName; document.title = `${data.storeName} · Relatórios`;
+      window.MercadoUi.updateInvoiceNavigation(data.userRole);
       $('user-label').textContent = data.userName; $('user-role').textContent = data.userRole; $('user-avatar').textContent = (data.userName?.[0] || 'M').toLocaleUpperCase('pt-BR');
       $('report-period').textContent = `PERÍODO: ${brDate(`${start}T12:00:00`)} A ${brDate(`${end}T12:00:00`)}`;
       $('metric-revenue').textContent = currency(data.report.totalVendido); $('metric-sales').textContent = String(data.report.quantidadeVendas); $('metric-ticket').textContent = currency(data.report.ticketMedio); $('metric-profit').textContent = currency(data.report.lucroBrutoEstimado);

@@ -1,7 +1,7 @@
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
+using CaixaLume.Data;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class AuditoriaService
 {

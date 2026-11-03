@@ -1,0 +1,29 @@
+[Unit]
+Description=CaixaLume - Gestao central local (piloto)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=caixalume-gestao
+Group=caixalume-gestao
+WorkingDirectory=/opt/caixalume-gestao/current
+ExecStart=/usr/bin/dotnet /opt/caixalume-gestao/current/CaixaLume.Management.dll
+EnvironmentFile=/etc/caixalume-gestao/server.env
+# HTTP permitido apenas em loopback; nao publicar este modo por proxy.
+Environment=ASPNETCORE_ENVIRONMENT=Development
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5187
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/caixalume-gestao
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

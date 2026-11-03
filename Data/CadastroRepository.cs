@@ -1,8 +1,8 @@
 using System.Globalization;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Data;
+namespace CaixaLume.Data;
 
 internal sealed class CadastroRepository
 {
@@ -59,7 +59,25 @@ internal sealed class CadastroRepository
     {
         using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
         var row = db.Query("SELECT Valor FROM Configuracoes WHERE Chave = 'NomeLoja';").FirstOrDefault();
-        return Convert.ToString(row?.GetValueOrDefault("Valor")) ?? "MERCADINHO PDV";
+        return Convert.ToString(row?.GetValueOrDefault("Valor")) ?? "CAIXALUME";
+    }
+
+    public string ObterCnpjLoja()
+    {
+        using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
+        var row = db.Query("SELECT Valor FROM Configuracoes WHERE Chave = 'CnpjLoja';").FirstOrDefault();
+        return Convert.ToString(row?.GetValueOrDefault("Valor")) ?? string.Empty;
+    }
+
+    public void SalvarCnpjLoja(string cnpj)
+    {
+        using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
+        if (db.Query("SELECT 1 FROM NfeImports WHERE DestinatarioCnpj<>@Valor LIMIT 1;",
+            new Dictionary<string, object?> { ["@Valor"] = cnpj }).Count != 0)
+            throw new InvalidOperationException("Há notas importadas para outro CNPJ. Não é possível trocar o CNPJ desta loja sem separar os dados.");
+        db.Execute("INSERT INTO Configuracoes (Chave, Valor) VALUES ('CnpjLoja', @Valor) ON CONFLICT(Chave) DO UPDATE SET Valor = excluded.Valor;",
+            new Dictionary<string, object?> { ["@Valor"] = cnpj });
+        new AuditoriaService().Registrar("EDICAO", "ESTABELECIMENTO", "CNPJ da loja configurado");
     }
 
     public void SalvarNomeLoja(string value)

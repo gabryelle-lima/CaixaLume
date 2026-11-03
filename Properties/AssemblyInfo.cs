@@ -1,3 +1,3 @@
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("MercadinhoPdv.IntegrationTests")]
+[assembly: InternalsVisibleTo("CaixaLume.IntegrationTests")]

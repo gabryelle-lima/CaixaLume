@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
-using MercadinhoPdv.Data;
+using CaixaLume.Data;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class UsuarioService
 {
@@ -10,7 +10,7 @@ public sealed class UsuarioService
     public bool PrecisaAdministradorInicial()
     {
         using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
-        return !db.Query("SELECT 1 FROM Usuarios WHERE Ativo = 1 AND UPPER(Perfil) = 'ADMINISTRADOR' AND SenhaHash IS NOT NULL AND SenhaHash <> '' LIMIT 1;").Any();
+        return !db.Query("SELECT 1 FROM Usuarios WHERE SenhaHash IS NOT NULL AND SenhaHash <> '' LIMIT 1;").Any();
     }
 
     public void CriarAdministradorInicial(string nome, string login, string senha)
@@ -32,7 +32,7 @@ public sealed class UsuarioService
         db.Execute("BEGIN IMMEDIATE;");
         try
         {
-            if (db.Query("SELECT 1 FROM Usuarios WHERE Ativo = 1 AND UPPER(Perfil) = 'ADMINISTRADOR' AND SenhaHash IS NOT NULL AND SenhaHash <> '' LIMIT 1;").Any()) throw new InvalidOperationException("A configuração inicial já foi concluída.");
+            if (db.Query("SELECT 1 FROM Usuarios WHERE SenhaHash IS NOT NULL AND SenhaHash <> '' LIMIT 1;").Any()) throw new InvalidOperationException("A configuração inicial já foi concluída.");
             string hash = HashPassword(senha);
             var existing = db.Query("SELECT Id, SenhaHash FROM Usuarios WHERE Login=@Login LIMIT 1;", new Dictionary<string, object?> { ["@Login"] = login }).FirstOrDefault();
             if (existing is null)
@@ -57,6 +57,7 @@ public sealed class UsuarioService
     public (int Id, string Nome, string Perfil)? Autenticar(string login, string senha)
     {
         using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
+        if (string.IsNullOrWhiteSpace(login) || string.IsNullOrEmpty(senha)) return null;
         var user = db.Query("SELECT Id, Nome, Login, Perfil, SenhaHash FROM Usuarios WHERE Login=@Login AND Ativo=1 LIMIT 1;", new Dictionary<string, object?> { ["@Login"] = login.Trim().ToLowerInvariant() }).FirstOrDefault();
         string? stored = Convert.ToString(user?.GetValueOrDefault("SenhaHash"));
         if (user is null || !VerifyPassword(senha, stored)) return null;
@@ -80,12 +81,11 @@ public sealed class UsuarioService
         using var db=new DatabaseConnection(DatabaseInitializer.DatabasePath);db.Execute("BEGIN IMMEDIATE;");
         try
         {
+            Autorizacao.ExigirUsuario(db, administrador: true);
             if (id != 0)
             {
-                var current = db.Query("SELECT Perfil FROM Usuarios WHERE Id=@Id;", new Dictionary<string,object?> { ["@Id"]=id }).SingleOrDefault() ?? throw new InvalidOperationException("Usuário não encontrado.");
-                if (Convert.ToString(current["Perfil"]) == "ADMINISTRADOR" && perfil != "ADMINISTRADOR"
-                    && Convert.ToInt64(db.Query("SELECT COUNT(*) FROM Usuarios WHERE Ativo=1 AND Perfil='ADMINISTRADOR';").Single().Values.Single()) <= 1)
-                    throw new InvalidOperationException("Mantenha pelo menos um administrador ativo.");
+                if (!db.Query("SELECT 1 FROM Usuarios WHERE Id=@Id;", new Dictionary<string,object?> { ["@Id"]=id }).Any())
+                    throw new InvalidOperationException("Usuário não encontrado.");
             }
             if(id==0)db.Execute("INSERT INTO Usuarios (Nome,Login,SenhaHash,Perfil,Ativo) VALUES (@Nome,@Login,@Hash,@Perfil,1);",new Dictionary<string,object?>{["@Nome"]=nome,["@Login"]=login,["@Hash"]=HashPassword(senha!),["@Perfil"]=perfil});
             else if(string.IsNullOrEmpty(senha))db.Execute("UPDATE Usuarios SET Nome=@Nome,Login=@Login,Perfil=@Perfil WHERE Id=@Id;",new Dictionary<string,object?>{["@Nome"]=nome,["@Login"]=login,["@Perfil"]=perfil,["@Id"]=id});
@@ -98,8 +98,18 @@ public sealed class UsuarioService
     {
         Autorizacao.ExigirAdministrador();
         if(Models.SessaoUsuario.UsuarioId==id)throw new InvalidOperationException("Não é possível desativar o usuário conectado.");
-        using var db=new DatabaseConnection(DatabaseInitializer.DatabasePath);db.Execute("UPDATE Usuarios SET Ativo=0 WHERE Id=@Id;",new Dictionary<string,object?>{["@Id"]=id});
-        new AuditoriaService().Registrar("DESATIVACAO","USUARIO",$"Usuário #{id} desativado.");
+        using var db=new DatabaseConnection(DatabaseInitializer.DatabasePath);
+        db.Execute("BEGIN IMMEDIATE;");
+        try
+        {
+            int ator = Autorizacao.ExigirUsuario(db, administrador: true);
+            if (!db.Query("SELECT 1 FROM Usuarios WHERE Id=@Id;", new Dictionary<string,object?> { ["@Id"]=id }).Any())
+                throw new InvalidOperationException("Usuário não encontrado.");
+            db.Execute("UPDATE Usuarios SET Ativo=0 WHERE Id=@Id;",new Dictionary<string,object?>{["@Id"]=id});
+            db.Execute("INSERT INTO Auditoria (UsuarioId,DataHora,Acao,Entidade,Descricao) VALUES (@Usuario,@Data,'DESATIVACAO','USUARIO',@Descricao);",new Dictionary<string,object?>{["@Usuario"]=ator,["@Data"]=DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),["@Descricao"]=$"Usuário #{id} desativado."});
+            db.Execute("COMMIT;");
+        }
+        catch { db.Execute("ROLLBACK;"); throw; }
     }
 
     public void Reativar(int id)
@@ -109,6 +119,7 @@ public sealed class UsuarioService
         db.Execute("BEGIN IMMEDIATE;");
         try
         {
+            Autorizacao.ExigirUsuario(db, administrador: true);
             var user=db.Query("SELECT Login,Ativo FROM Usuarios WHERE Id=@Id;",new Dictionary<string,object?>{["@Id"]=id}).SingleOrDefault()??throw new InvalidOperationException("Usuário não encontrado.");
             if(Convert.ToInt32(user["Ativo"])==1)throw new InvalidOperationException("O usuário já está ativo.");
             db.Execute("UPDATE Usuarios SET Ativo=1 WHERE Id=@Id;",new Dictionary<string,object?>{["@Id"]=id});
@@ -136,8 +147,9 @@ public sealed class UsuarioService
         try
         {
             var parts = encoded?.Split('$');
-            if (parts is not { Length: 4 } || parts[0] != "pbkdf2-sha256" || !int.TryParse(parts[1], out int iterations) || iterations < 100_000) return false;
+            if (parts is not { Length: 4 } || parts[0] != "pbkdf2-sha256" || !int.TryParse(parts[1], out int iterations) || iterations < 100_000 || iterations > 2_000_000) return false;
             byte[] salt = Convert.FromBase64String(parts[2]), expected = Convert.FromBase64String(parts[3]);
+            if (salt.Length < 16 || salt.Length > 64 || expected.Length != 32) return false;
             byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
             return CryptographicOperations.FixedTimeEquals(actual, expected);
         }

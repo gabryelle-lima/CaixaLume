@@ -63,6 +63,7 @@
     const started = performance.now();
     try {
       const data = await request('dashboard.getData');
+      window.MercadoUi.updateInvoiceNavigation(data.userRole);
       const firstName = (data.userName || 'Olá').trim().split(/\s+/)[0];
       document.title = `${data.storeName || 'Mercado'} · Visão geral`;
       document.getElementById('store-name').textContent = data.storeName || 'Mercado';

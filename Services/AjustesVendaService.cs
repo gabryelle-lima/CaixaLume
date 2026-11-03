@@ -1,8 +1,8 @@
 using System.Text.Json;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
+using CaixaLume.Data;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class AjustesVendaService
 {
@@ -44,6 +44,7 @@ public sealed class AjustesVendaService
 
     internal static TotaisVenda Calcular(decimal subtotal, AjusteVenda? ajuste, PoliticaAjustesVenda politica, bool administrador)
     {
+        ValoresMonetarios.Centavos(subtotal);
         ajuste ??= new();
         string tipo = (ajuste.TipoDesconto ?? "").Trim().ToUpperInvariant();
         if (tipo is not ("VALOR" or "PERCENTUAL") || ajuste.Desconto < 0 || ajuste.Acrescimo < 0)
@@ -55,10 +56,10 @@ public sealed class AjustesVendaService
         bool alterou = ajuste.Desconto != 0 || ajuste.Acrescimo != 0;
         if (alterou && (!politica.Habilitada || (!administrador && !politica.PermitirOperador)))
             throw new InvalidOperationException("Descontos e acréscimos estão desabilitados para este usuário. O administrador deve definir a política.");
-        decimal desconto = tipo == "PERCENTUAL" ? decimal.Round(subtotal * ajuste.Desconto / 100, 2, MidpointRounding.AwayFromZero) : ajuste.Desconto;
+        decimal desconto = tipo == "PERCENTUAL" ? ValoresMonetarios.Arredondar(subtotal * ajuste.Desconto / 100) : ajuste.Desconto;
         if (desconto > subtotal || (tipo == "PERCENTUAL" && ajuste.Desconto > 100))
             throw new InvalidOperationException("O desconto não pode superar o subtotal da venda.");
-        decimal limite = decimal.Round(subtotal * politica.MaxDescontoPercentual / 100, 2, MidpointRounding.AwayFromZero);
+        decimal limite = ValoresMonetarios.Arredondar(subtotal * politica.MaxDescontoPercentual / 100);
         if (desconto > limite || ajuste.Acrescimo > politica.MaxAcrescimoValor)
             throw new InvalidOperationException("O ajuste ultrapassa o limite definido pelo administrador.");
         return new(subtotal, desconto, ajuste.Acrescimo, subtotal - desconto + ajuste.Acrescimo);

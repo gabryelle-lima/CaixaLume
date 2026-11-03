@@ -19,18 +19,29 @@
     send({ version: 1, id: crypto.randomUUID(), action: 'diagnostics.performance', payload: { page, phase, milliseconds: Math.max(0, Math.min(120000, Math.round(milliseconds))) } });
   }
 
-  function request(action, payload = {}) {
+  const readInFlight=new Map();
+  const dataReads=new Set(['pdv.getData','products.getData','reports.getData','management.getData','dashboard.getData']);
+  function request(action,payload={}){
+    if(!dataReads.has(action))return sendRequest(action,payload);
+    const key=action+JSON.stringify(payload);
+    if(readInFlight.has(key))return readInFlight.get(key);
+    const promise=sendRequest(action,payload).finally(()=>{if(readInFlight.get(key)===promise)readInFlight.delete(key);});
+    readInFlight.set(key,promise);return promise;
+  }
+  function sendRequest(action, payload = {}) {
     if (!embedded && !window.chrome?.webview) return Promise.reject(new Error('A ponte com o aplicativo não está disponível.'));
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
-      const transactional = action === 'pdv.checkout' || action === 'pdv.openCash';
-      const timeoutMs = action === 'products.pickImage' || action.startsWith('reports.export') || action === 'reports.print' || action === 'management.backup' || action === 'management.restore' ? 300000 : transactional ? 60000 : action === 'products.lookup' ? 25000 : 15000;
+      const transactional = action === 'pdv.checkout' || action === 'pdv.openCash' || action === 'stock.invoice.import';
+      const timeoutMs = action === 'products.pickImage' || action === 'stock.invoice.select' || action === 'stock.invoice.exportExcel' || action.startsWith('reports.export') || action === 'reports.print' || action === 'management.backup' || action === 'management.restore' ? 300000 : transactional ? 60000 : action === 'products.lookup' ? 25000 : 15000;
       const timeout = window.setTimeout(() => {
         pending.delete(id);
         const message = action === 'pdv.checkout'
           ? 'A venda ainda não teve confirmação. Ela pode ter sido registrada; consulte a mesma operação ou verifique o histórico antes de iniciar outra.'
           : action === 'pdv.openCash'
             ? 'A abertura do caixa ainda não teve confirmação. Verifique o status do caixa antes de tentar novamente.'
+            : action === 'stock.invoice.import'
+              ? 'A entrada da NF-e ainda não teve confirmação. Confira o histórico de notas antes de tentar novamente.'
             : 'O aplicativo demorou para responder.';
         const error = new Error(message); error.code = transactional ? 'UNKNOWN_OUTCOME' : 'TIMEOUT'; reject(error);
       }, timeoutMs);

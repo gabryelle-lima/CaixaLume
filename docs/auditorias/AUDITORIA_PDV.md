@@ -1,8 +1,8 @@
 # Auditoria técnica e funcional — MercadinhoPDV
 
-**Data:** 17/10/2026  
+**Data:** 17/10/2026
 **Atualização de entrega em 18/10/2026:** esta auditoria permanece como fotografia anterior às correções. Consulte RELATORIO_RODADA_CORRECOES.md para o estado F-01 a F-12 após a implementação, 73 testes C# e 6 JavaScript aprovados, publicação x64 e prontidão aproximada atualizada para 80%.
-**Escopo:** leitura do código, documentação e estrutura do projeto; compilação; execução da suíte de integração em banco temporário; verificação sintática dos scripts JavaScript.  
+**Escopo:** leitura do código, documentação e estrutura do projeto; compilação; execução da suíte de integração em banco temporário; verificação sintática dos scripts JavaScript.
 **Restrição respeitada:** nenhum código-fonte ou banco de produção foi alterado. Este documento é o único artefato novo da auditoria.
 
 ## A. Diagnóstico geral
@@ -117,7 +117,7 @@ A interface está em transição. O dashboard e o PDV são páginas locais em We
 ### F-09 — Cobertura automatizada não valida as telas e o hardware
 
 - **Gravidade:** Média — risco de defeitos de fluxo visual permanecerem sem detecção.
-- **Local:** Tests/MercadinhoPdv.IntegrationTests/Program.cs; Web/app.js; Forms/PdvForm.cs e formulários Windows Forms.
+- **Local:** Tests/CaixaLume.IntegrationTests/Program.cs; Web/app.js; Forms/PdvForm.cs e formulários Windows Forms.
 - **Causa:** a suíte é um executável de cenários de integração de serviço/banco. Os scripts tiveram somente checagem sintática nesta auditoria; não há automação da interface.
 - **Efeito:** os 33 cenários passam, mas isso não comprova posicionamento dos controles, funcionamento de foco/atalhos, máscara em digitação real, WebView2, leitor físico, impressora ou consulta externa.
 - **Recomendação:** antes de liberar, executar roteiro manual documentado e automatizar pelo menos os fluxos de venda, caixa, salvamento de produto e visualização em escalas/resoluções representativas.
@@ -125,7 +125,7 @@ A interface está em transição. O dashboard e o PDV são páginas locais em We
 ### F-10 — Distribuição pronta para usuário final não foi comprovada
 
 - **Gravidade:** Média para implantação comercial.
-- **Local:** MercadinhoPdv.csproj e arquivos da raiz do projeto.
+- **Local:** CaixaLume.csproj e arquivos da raiz do projeto.
 - **Causa:** o projeto compila o aplicativo Windows e copia os assets Web, mas não foi encontrado instalador, atualizador ou pacote de publicação validado. O projeto também depende do ambiente Windows e do runtime WebView2 para a interface atual.
 - **Efeito:** não há evidência de uma instalação repetível, com pré-requisitos, atalho, localização do banco, atualização e recuperação suportados em computador limpo.
 - **Recomendação:** definir publicação Windows x64, validar os runtimes .NET/WebView2 no destino, criar instalador e documentar backup, atualização e restauração.
@@ -236,5 +236,5 @@ Estimativas aproximadas, não métricas de código. Consideram existência do fl
 - Banco e integridade referencial: Data/DatabaseConnection.cs; Data/DatabaseInitializer.cs; Services/DespesasService.cs.
 - Venda e ponte do PDV: Services/VendaService.cs; Data/VendaRepository.cs; Services/PdvWebBridge.cs; Web/app.js; Web/index.html.
 - Produtos, catálogo e estoque: Services/OpenFoodFactsService.cs; Forms/ProdutoForm.cs; Services/EstoqueService.cs; Services/DashboardService.cs.
-- Cobertura: Tests/MercadinhoPdv.IntegrationTests/Program.cs.
+- Cobertura: Tests/CaixaLume.IntegrationTests/Program.cs.
 - Limitações declaradas pelo projeto: README.md e docs/IMPLEMENTATION_STATUS.md.

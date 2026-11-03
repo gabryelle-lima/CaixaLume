@@ -14,3 +14,13 @@ artifacts/
 *.pem
 .env
 .env.*
+
+*.protected
+*.protected.tmp-*
+
+# Local credentials and generated Python caches
+**/__pycache__/
+*.pyc
+*.sqlite
+*.sqlite-*
+**/*.authkeys/

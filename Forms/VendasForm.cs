@@ -1,7 +1,7 @@
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class VendasForm : Form
 {
@@ -12,12 +12,18 @@ internal sealed class VendasForm : Form
     private readonly ComboBox _status = new() { DropDownStyle=ComboBoxStyle.DropDownList, Width=140 };
     private readonly Button _cancel = new() { Text="Cancelar venda", AutoSize=true, Enabled=false };
 
+    private int _pagina=1;
+    private long? _limiteId;
+    private readonly Button _anterior=new() { Text="Anterior",AutoSize=true };
+    private readonly Button _proxima=new() { Text="Próxima",AutoSize=true };
+    private readonly Label _paginacao=new() { AutoSize=true };
+
     public VendasForm()
     {
         Text="Vendas"; StartPosition=FormStartPosition.CenterParent; MinimumSize=new Size(920,580); Size=new Size(1120,680);
-        var root=new TableLayoutPanel { Dock=DockStyle.Fill, Padding=new Padding(16), ColumnCount=1, RowCount=2 };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute,52)); root.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-        var filters=new FlowLayoutPanel { Dock=DockStyle.Fill, WrapContents=false, AutoScroll=true };
+        var root=new TableLayoutPanel { Dock=DockStyle.Fill, Padding=new Padding(16), ColumnCount=1, RowCount=3 };
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); root.RowStyles.Add(new RowStyle(SizeType.Percent,100));
+        var filters=new FlowLayoutPanel { Dock=DockStyle.Fill, WrapContents=true, AutoSize=true, AutoSizeMode=AutoSizeMode.GrowAndShrink };
         var presets=new ComboBox { DropDownStyle=ComboBoxStyle.DropDownList, Width=160 };
         presets.Items.AddRange(["Hoje","Ontem","Últimos 7 dias","Últimos 30 dias","Este mês","Mês anterior","Personalizado"]); presets.SelectedIndex=3;
         _status.Items.AddRange(["Todos","Concluída","Cancelada"]); _status.SelectedIndex=0;
@@ -27,11 +33,16 @@ internal sealed class VendasForm : Form
         details.Click+=(_,_)=>ShowDetails(); _cancel.Click+=(_,_)=>CancelSale();
         presets.SelectedIndexChanged+=(_,_)=>{if(presets.SelectedIndex==6){_start.Enabled=_end.Enabled=true;return;} _start.Enabled=_end.Enabled=false; var today=DateTime.Today; switch(presets.SelectedIndex){case 0:_start.Value=_end.Value=today;break;case 1:_start.Value=_end.Value=today.AddDays(-1);break;case 2:_start.Value=today.AddDays(-6);_end.Value=today;break;case 3:_start.Value=today.AddDays(-29);_end.Value=today;break;case 4:_start.Value=new DateTime(today.Year,today.Month,1);_end.Value=today;break;case 5:_start.Value=new DateTime(today.Year,today.Month,1).AddMonths(-1);_end.Value=new DateTime(today.Year,today.Month,1).AddDays(-1);break;} RefreshRows();};
         _start.ValueChanged+=(_,_)=>RefreshRows(); _end.ValueChanged+=(_,_)=>RefreshRows(); _status.SelectedIndexChanged+=(_,_)=>RefreshRows();
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute,40));
+        var pages=new FlowLayoutPanel { Dock=DockStyle.Fill };
+        pages.Controls.AddRange([_anterior,_paginacao,_proxima]);
+        _anterior.Click+=(_,_)=>{_pagina--;RefreshRows(true);};_proxima.Click+=(_,_)=>{_pagina++;RefreshRows(true);};
+        root.Controls.Add(pages,0,2);
         root.Controls.Add(filters,0,0); root.Controls.Add(_grid,0,1); Controls.Add(root); UiTheme.Apply(this); RefreshRows();
     }
 
     private VendaHistoricoLinha? Selected()=>_grid.CurrentRow?.DataBoundItem as VendaHistoricoLinha;
-    private void RefreshRows(){if(_end.Value.Date<_start.Value.Date)return;_grid.DataSource=_service.ListarHistorico(_start.Value,_end.Value,_status.SelectedIndex switch{1=>"Concluida",2=>"Cancelada",_=>null});foreach(DataGridViewColumn c in _grid.Columns){if(c.DataPropertyName==nameof(VendaHistoricoLinha.Data))c.DefaultCellStyle.Format="dd/MM/yyyy HH:mm";if(c.DataPropertyName is nameof(VendaHistoricoLinha.Total) or nameof(VendaHistoricoLinha.Subtotal) or nameof(VendaHistoricoLinha.Desconto) or nameof(VendaHistoricoLinha.Acrescimo))c.DefaultCellStyle.Format="C2";}}
+    private void RefreshRows(bool manterPagina=false){if(!manterPagina){_pagina=1;_limiteId=null;}if(_end.Value.Date<_start.Value.Date)return;var page=_service.ListarHistoricoPaginado(_start.Value,_end.Value,_status.SelectedIndex switch{1=>"Concluida",2=>"Cancelada",_=>null},_pagina,100,_limiteId);_limiteId=page.LimiteId;_grid.DataSource=page.Itens;_anterior.Enabled=_pagina>1;_proxima.Enabled=page.TemProxima;_paginacao.Text=$"Página {_pagina} · {page.Total} registros";foreach(DataGridViewColumn c in _grid.Columns){if(c.DataPropertyName==nameof(VendaHistoricoLinha.Data))c.DefaultCellStyle.Format="dd/MM/yyyy HH:mm";if(c.DataPropertyName is nameof(VendaHistoricoLinha.Total) or nameof(VendaHistoricoLinha.Subtotal) or nameof(VendaHistoricoLinha.Desconto) or nameof(VendaHistoricoLinha.Acrescimo))c.DefaultCellStyle.Format="C2";}}
     private void ShowDetails(){if(Selected() is not { } sale)return;var grid=new DataGridView{Dock=DockStyle.Fill,ReadOnly=true,AutoGenerateColumns=true,AllowUserToAddRows=false,AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill};UiTheme.StyleGrid(grid);grid.DataSource=_service.Detalhes(sale.Id);foreach(DataGridViewColumn c in grid.Columns){if(c.DataPropertyName==nameof(VendaItemDetalhe.PrecoUnitario)||c.DataPropertyName==nameof(VendaItemDetalhe.Subtotal))c.DefaultCellStyle.Format="C2";if(c.DataPropertyName==nameof(VendaItemDetalhe.Quantidade))c.DefaultCellStyle.Format="0.###";}using var form=new Form{Text=$"Venda #{sale.Id} · {sale.Status} · {sale.Total:C2}",StartPosition=FormStartPosition.CenterParent,Size=new Size(760,460),MinimumSize=new Size(580,340)};form.Controls.Add(grid);UiTheme.Apply(form);form.ShowDialog(this);}
     private void CancelSale(){if(Selected() is not { } sale)return;using var reason=new CadastroDialog($"Cancelar venda #{sale.Id}","Motivo");if(reason.ShowDialog(this)!=DialogResult.OK)return;if(!UiDialog.Confirm(this,"Confirmar cancelamento",$"A venda #{sale.Id} será mantida no histórico, o estoque será devolvido e o registro marcado como cancelado. Continuar?",true))return;try{_service.Cancelar(sale.Id,reason.Values["Motivo"]);RefreshRows();UiDialog.Success(this,"Venda cancelada","A venda foi estornada e preservada no histórico.");}catch(Exception ex){UiDialog.Warning(this,"Não foi possível cancelar",ex.Message);}}
 }

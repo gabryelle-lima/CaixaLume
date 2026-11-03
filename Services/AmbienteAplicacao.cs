@@ -1,6 +1,6 @@
-using MercadinhoPdv.Data;
+using CaixaLume.Data;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public static class AmbienteAplicacao
 {
@@ -9,9 +9,9 @@ public static class AmbienteAplicacao
         get
         {
 #if DEBUG
-            string? configured = Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE");
-            string production = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MercadinhoPdv", "dados", "mercadinho.db");
-            return Environment.GetEnvironmentVariable("MERCADINHOPDV_AMBIENTE") == "DESENVOLVIMENTO"
+            string? configured = CaixaLume.Data.CaminhosAplicacao.BancoConfigurado;
+            string production = CaminhosAplicacao.BancoProducao;
+            return CaixaLume.Data.CaminhosAplicacao.AmbienteConfigurado == "DESENVOLVIMENTO"
                 && !string.IsNullOrWhiteSpace(configured)
                 && string.Equals(Path.GetFullPath(configured), DatabaseInitializer.DatabasePath, StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(DatabaseInitializer.DatabasePath, production, StringComparison.OrdinalIgnoreCase)

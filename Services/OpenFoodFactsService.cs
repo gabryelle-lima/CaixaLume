@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed record ProdutoCatalogoPublico(string CodigoBarras, string Nome, string? Marca, string? Categoria, string? ImagemUrl);
 
@@ -51,7 +51,7 @@ public sealed class OpenFoodFactsService
     private static HttpClient CreateClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("MercadinhoPdv/1.0 (Windows desktop product catalog)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("CaixaLume/0.1.3 (Windows desktop product catalog)");
         client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("pt-BR,pt;q=0.9,en;q=0.7");
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         return client;

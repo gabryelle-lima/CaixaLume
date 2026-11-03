@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 
-namespace MercadinhoPdv.Data;
+namespace CaixaLume.Data;
 
 /// <summary>Pequena ponte para o SQLite nativo já disponível no Windows.</summary>
 internal sealed class DatabaseConnection : IDisposable
@@ -29,6 +29,8 @@ internal sealed class DatabaseConnection : IDisposable
             // Aguarde a transação em curso antes de declarar o banco ocupado.
             if (sqlite3_busy_timeout(_database, 5000) != SqliteOk) ThrowDatabaseError();
             Execute("PRAGMA foreign_keys = ON;");
+            // Confirmações duráveis e recuperação do journal após encerramento do processo.
+            Execute("PRAGMA synchronous = FULL;");
             if (Convert.ToInt64(Query("PRAGMA foreign_keys;").Single().Values.Single()) != 1)
                 throw new InvalidOperationException("A integridade referencial do SQLite não pôde ser habilitada.");
         }

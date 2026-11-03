@@ -1,9 +1,9 @@
-using MercadinhoPdv.Diagnostics;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Services;
+using CaixaLume.Diagnostics;
+using CaixaLume.Models;
+using CaixaLume.Data;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class PdvForm : Form
 {
@@ -426,6 +426,8 @@ internal sealed class PdvForm : Form
         _search.Focus();
     }
 
+    private string? _saleOperationId;
+
     private void FinishSale()
     {
         if (_saleBusy || _cart.Count == 0 || !ValidateChildren()) return;
@@ -440,21 +442,29 @@ internal sealed class PdvForm : Form
         try
         {
             _saleBusy = true;
-            saleId = _sales.Registrar(_cart, payment.FormaPagamento, payment.ValorRecebido, _adjustment, Guid.NewGuid().ToString(), total);
+            saleId = _sales.Registrar(_cart, payment.FormaPagamento, payment.ValorRecebido, _adjustment, _saleOperationId ??= Guid.NewGuid().ToString(), total);
         }
         catch (Exception exception)
         {
+            // Falha de resposta não autoriza gerar outra operação para a mesma venda.
+            try
+            {
+                var registrada = _saleOperationId is null ? null : _sales.ObterPorOperacao(_saleOperationId);
+                if (registrada is null) _saleOperationId = null;
+            }
+            catch { /* Resultado desconhecido: mantém o identificador para o reenvio. */ }
             AppLogger.Error(exception, "Finalizar venda");
             string context = BuildSaleDiagnosticContext(payment, total);
             AppLogger.Error(new InvalidOperationException(context, exception), "Diagnóstico detalhado da venda");
             string? stage = Convert.ToString(exception.Data["VendaEtapa"]);
-            UiDialog.Error(this, "Não foi possível concluir a venda", $"O carrinho foi mantido e nenhuma venda foi confirmada.\n\nEtapa: {stage ?? "validar/registrar venda"}\nMotivo: {exception.Message}\n\nDiagnóstico completo registrado em: {AppLogger.LogPath}");
+            UiDialog.Error(this, "Não foi possível concluir a venda", $"O carrinho foi mantido. Consulte o histórico antes de iniciar outra venda se o resultado for desconhecido.\n\nEtapa: {stage ?? "validar/registrar venda"}\nMotivo: {exception.Message}\n\nDiagnóstico completo registrado em: {AppLogger.LogPath}");
             return;
         }
         finally { _saleBusy = false; }
 
         try
         {
+            _saleOperationId = null;
             var completedItems = _cart.ToList();
             var completedTotals = _sales.ObterTotais(saleId);
             _adjustment = new();

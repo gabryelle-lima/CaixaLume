@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public static class QuantidadeService
 {

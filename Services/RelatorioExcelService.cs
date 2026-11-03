@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.IO.Compression;
 using System.Xml;
-using MercadinhoPdv.Models;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 internal static class RelatorioExcelService
 {
@@ -15,6 +15,33 @@ internal static class RelatorioExcelService
     {
         Autorizacao.ExigirAdministrador();
         var sheets = BuildSheets(report, storeName);
+        SaveSheets(sheets, destination);
+    }
+
+    internal static void SalvarEntradasNfe(NfeImportReportData report, string storeName, DateTime start, DateTime end, string destination)
+    {
+        Autorizacao.ExigirAdministrador();
+        static string Date(DateTime value) => value.ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("pt-BR"));
+        decimal costTotal = report.Entries.Sum(entry => entry.TotalCost);
+        var sheets = new List<Sheet>
+        {
+            new("Resumo", ["Indicador", "Valor"], new object?[][]
+            {
+                ["Loja", storeName], ["Entrada de", start.ToString("dd/MM/yyyy")], ["Entrada até", end.ToString("dd/MM/yyyy")],
+                ["Notas importadas", report.Invoices.Count], ["Linhas recebidas", report.Entries.Count],
+                ["Custo dos itens recebidos (R$)", costTotal],
+                ["Situação fiscal", "Não consultada online; confira o XML e o recebimento físico"]
+            }),
+            new("Notas", ["Número", "Série", "Emissão", "Entrada em", "Fornecedor", "CNPJ fornecedor", "CNPJ destinatário", "Chave de acesso", "Total da nota (R$)", "Itens"],
+                report.Invoices.Select(x => new object?[] { x.Number, x.Series, Date(x.IssueDate), Date(x.Date), x.SupplierName, x.SupplierCnpj, x.RecipientCnpj, x.Key, x.InvoiceTotal, x.ItemCount })),
+            new("Entradas", ["Número da nota", "Entrada em", "Fornecedor", "Produto", "Quantidade", "Unidade", "Custo unitário (R$)", "Custo total (R$)"],
+                report.Entries.Select(x => new object?[] { x.Number, Date(x.Date), x.SupplierName, x.ProductName, x.Quantity, x.Unit, x.UnitCost, x.TotalCost }))
+        };
+        SaveSheets(sheets, destination);
+    }
+
+    private static void SaveSheets(IReadOnlyList<Sheet> sheets, string destination)
+    {
         string path = Path.GetFullPath(destination);
         string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try

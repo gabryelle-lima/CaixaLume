@@ -1,8 +1,9 @@
-namespace MercadinhoPdv.Models;
+namespace CaixaLume.Models;
 
 // Modelos representam os dados do domínio. Operações sobre eles ficarão em Services.
 public class Produto
 {
+    public long? Versao { get; set; }
     public int Id { get; set; }
     public string Nome { get; set; } = string.Empty;
     public string? CodigoBarras { get; set; }

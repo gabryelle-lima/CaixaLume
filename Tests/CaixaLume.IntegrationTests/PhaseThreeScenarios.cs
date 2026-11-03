@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
-using MercadinhoPdv.Forms;
+using CaixaLume.Data;
+using CaixaLume.Models;
+using CaixaLume.Services;
+using CaixaLume.Forms;
 
 internal static class PhaseThreeScenarios
 {

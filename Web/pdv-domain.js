@@ -19,14 +19,15 @@
     const mills = Math.round(quantity(item.quantity, item.product.unit) * 1000);
     return Number((BigInt(cents(item.product.price)) * BigInt(mills) + 500n) / 1000n);
   }
+  const searchText = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
   function resolveProduct(products, query) {
     const text = String(query).trim();
     if (!text) return { kind: 'empty' };
     const active = products.filter(p => p.active !== false);
     const byCode = active.filter(p => String(p.barcode || '') === text);
-    let matches = byCode.length ? byCode : active.filter(p => p.name.toLocaleLowerCase('pt-BR') === text.toLocaleLowerCase('pt-BR'));
+    let matches = byCode.length ? byCode : active.filter(p => searchText(p.name) === searchText(text));
     if (!matches.length && /^\d+$/.test(text)) matches = active.filter(p => String(p.id) === text);
-    if (!matches.length && !/^\d+$/.test(text)) matches = active.filter(p => p.name.toLocaleLowerCase('pt-BR').includes(text.toLocaleLowerCase('pt-BR')));
+    if (!matches.length && !/^\d+$/.test(text)) matches = active.filter(p => searchText(p.name).includes(searchText(text)));
     return matches.length === 1 ? { kind: 'found', product: matches[0] } : { kind: matches.length ? 'ambiguous' : 'notFound' };
   }
   function totals(items, adjustment = {}, policy = {}, role = 'OPERADOR') {

@@ -1,0 +1,6 @@
+{
+  "Data/DatabaseInitializer.cs": "7a52d0986f5f63ae86c385f8237fda1d9e30fb7ceb72dbecb2c6ae9b04af0732",
+  "Services/Autorizacao.cs": "5421e145603a79467e46a1687d2df3f9b62ac1c71792d3c6836b5bc9124cba68",
+  "Services/UsuarioService.cs": "19536a948765c6174919215f588f5a10b38ff7990d3949a76c23c05bcd523261",
+  "Tests/CaixaLume.IntegrationTests/SecurityScenarios.cs": "e8fb51612a331b61b5eb9b280735ec7c9498f9b5a8e26836330305a9e0c33102"
+}

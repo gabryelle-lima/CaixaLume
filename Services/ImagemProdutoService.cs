@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
-using MercadinhoPdv.Data;
+using CaixaLume.Data;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class ImagemProdutoService
 {
@@ -75,8 +75,8 @@ public sealed class ImagemProdutoService
 
     private static string CacheDirectory()
     {
-        string path = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE"))
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MercadinhoPdv", "imagens")
+        string path = string.IsNullOrWhiteSpace(CaixaLume.Data.CaminhosAplicacao.BancoConfigurado)
+            ? CaminhosAplicacao.Imagens
             : Path.Combine(Path.GetDirectoryName(DatabaseInitializer.DatabasePath)!, "imagens");
         Directory.CreateDirectory(path);
         return path;

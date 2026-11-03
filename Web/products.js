@@ -42,11 +42,11 @@
 
   function renderRows() {
     const host = $('product-rows'); host.replaceChildren();
-    const query = state.query.toLocaleLowerCase('pt-BR');
+    const query = window.MercadoInput.normalizeSearch(state.query);
     const visible = state.products.filter(product =>
       (state.inactive || product.ativo) &&
       (state.category === 'Todas' || (product.categoriaNome || 'Sem categoria') === state.category) &&
-      (!query || product.nome.toLocaleLowerCase('pt-BR').includes(query) || String(product.codigoBarras || '').includes(query)));
+      (!query || window.MercadoInput.normalizeSearch(product.nome).includes(query) || String(product.codigoBarras || '').includes(query)));
     $('product-count').textContent = `${visible.length} ${visible.length === 1 ? 'produto' : 'produtos'}`;
     $('products-empty').hidden = visible.length > 0;
     const fragment = document.createDocumentFragment();
@@ -96,6 +96,7 @@
       const data = await request('products.getData');
       state.products = data.products || [];
       state.categories = data.categories || []; state.suppliers = data.suppliers || [];
+      window.MercadoUi.updateInvoiceNavigation(data.userRole);
       state.admin = data.userRole === 'ADMINISTRADOR'; state.canDelete = Boolean(data.canDelete);
       if (!selected()) state.selectedId = null;
       const categories = new Set(state.products.map(product => product.categoriaNome || 'Sem categoria'));
@@ -113,7 +114,7 @@
         state.initialBarcodeHandled = true;
         const route = new URLSearchParams(window.location.search);
         const barcode = route.get('barcode');
-        if (barcode && /^\d{8,14}$/.test(barcode)) {
+        if (barcode && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(barcode)) {
           state.returnToPdv = route.get('return') === 'pdv';
           state.returnBarcode = state.returnToPdv ? barcode : null;
           window.history.replaceState(null, '', './products.html');
@@ -124,18 +125,7 @@
     } catch (error) { $('products-error-text').textContent = error.message; $('products-error').hidden = false; }
   }
 
-  function confirmAction(title, description, destructive = false) {
-    return new Promise(resolve => {
-      const dialog = $('confirm-modal'), accept = $('confirm-accept'), cancel = $('confirm-cancel');
-      $('confirm-title').textContent = title; $('confirm-description').textContent = description;
-      accept.classList.toggle('button-danger', destructive); accept.classList.toggle('button-primary', !destructive);
-      let done = false;
-      const finish = result => { if (done) return; done = true; dialog.close(); resolve(result); };
-      accept.onclick = () => finish(true); cancel.onclick = () => finish(false);
-      dialog.oncancel = event => { event.preventDefault(); finish(false); };
-      dialog.showModal(); cancel.focus();
-    });
-  }
+  function confirmAction(title,description,destructive=false){return window.MercadoUi.confirm(description,{title,destructive});}
 
   function setOptions(id, options, selectedId) {
     const select = $(id); select.replaceChildren();
@@ -164,7 +154,8 @@
     if (productId && !product) { notify(toast, 'Produto não encontrado. Atualize a lista.', true); return; }
     state.editorId = productId; state.imageToken = null; state.removeImage = false; showImage(null);
     $('product-modal-title').textContent = product ? `Editar ${product.nome}` : 'Novo produto';
-    $('field-barcode').value = product?.codigoBarras || '';
+    state.editorVersion = product?.versao ?? null;
+      $('field-barcode').value = product?.codigoBarras || '';
     $('field-name').value = product?.nome || '';
     $('field-price').value = product ? formatDecimal(product.precoVenda, 2) : '';
     $('field-unit').value = product?.unidadeMedida || 'UN';
@@ -183,15 +174,7 @@
   }
 
   function formatDecimal(value, places) { return Number(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: places, maximumFractionDigits: places }); }
-  function parseDecimal(value, places, label) {
-    const raw = String(value || '').trim();
-    const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
-    const pattern = places === 0 ? /^\d+$/ : new RegExp(`^\\d+(?:\\.\\d{1,${places}})?$`);
-    if (!pattern.test(normalized)) throw new Error(`${label}: informe um número válido com até ${places} casas decimais.`);
-    const number = Number(normalized);
-    if (!Number.isFinite(number) || number < 0 || number > 999999) throw new Error(`${label}: valor fora do limite permitido.`);
-    return number;
-  }
+  function parseDecimal(value,places,label){try{return window.MercadoInput.decimal(value,places,999999);}catch(error){throw new Error(`${label}: ${error.message}`);}}
 
   async function saveProduct(event) {
     event.preventDefault(); if (state.saving) return;
@@ -199,7 +182,7 @@
     try {
       const unit = $('field-unit').value;
       const draft = {
-        id: state.editorId,
+        id: state.editorId, versao: state.editorVersion,
         codigoBarras: $('field-barcode').value.trim() || null,
         nome: $('field-name').value.trim(),
         precoVenda: parseDecimal($('field-price').value, 2, 'Preço de venda'),

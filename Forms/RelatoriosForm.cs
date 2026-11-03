@@ -1,7 +1,7 @@
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class RelatoriosForm : Form
 {
@@ -36,10 +36,10 @@ internal sealed class RelatoriosForm : Form
     private void BuildLayout()
     {
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(18), ColumnCount = 1, RowCount = 3 };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 118));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoScroll = true };
+        var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink };
         _period.Items.AddRange(["Hoje", "Ontem", "Últimos 7 dias", "Últimos 30 dias", "Este mês", "Mês anterior", "Período personalizado"]);
         _period.SelectedIndex = 0;
         _customDates.Controls.AddRange([new Label { Text = "De", AutoSize = true, Margin = new Padding(4, 8, 2, 0) }, _start, new Label { Text = "Até", AutoSize = true, Margin = new Padding(4, 8, 2, 0) }, _end]);

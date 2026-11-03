@@ -1,4 +1,4 @@
-namespace MercadinhoPdv.Models;
+namespace CaixaLume.Models;
 
 /// <summary>Item simples usado nas listas de categoria e fornecedor.</summary>
 public class OpcaoCadastro

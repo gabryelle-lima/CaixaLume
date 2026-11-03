@@ -1,4 +1,4 @@
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 internal static class InicializacaoInterface
 {

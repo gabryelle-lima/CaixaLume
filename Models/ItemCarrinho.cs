@@ -1,4 +1,4 @@
-namespace MercadinhoPdv.Models;
+namespace CaixaLume.Models;
 
 using System.Globalization;
 
@@ -11,6 +11,6 @@ public sealed class ItemCarrinho
     public decimal Quantidade { get; set; }
     public decimal PrecoUnitario { get; set; }
     public decimal EstoqueDisponivel { get; set; }
-    public decimal Subtotal => decimal.Round(Quantidade * decimal.Round(PrecoUnitario, 2, MidpointRounding.AwayFromZero), 2, MidpointRounding.AwayFromZero);
+    public decimal Subtotal => Services.ValoresMonetarios.Subtotal(Quantidade, PrecoUnitario);
     public string QuantidadeFormatada => $"{Quantidade.ToString(UnidadeMedida == "UN" ? "0" : "0.000", CultureInfo.CurrentCulture)} {UnidadeMedida}";
 }

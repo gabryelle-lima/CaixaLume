@@ -1,8 +1,8 @@
-using MercadinhoPdv.Diagnostics;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Diagnostics;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class FornecedoresForm : Form
 {

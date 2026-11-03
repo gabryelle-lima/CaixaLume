@@ -59,7 +59,7 @@ dotnet restore
 dotnet run
 ```
 
-O banco SQLite é armazenado no perfil local do Windows, em `%LOCALAPPDATA%\MercadinhoPdv\dados\mercadinho.db`. No primeiro acesso, crie o usuário administrador e abra o caixa antes de registrar vendas.
+O banco SQLite é armazenado no perfil local do Windows, em `%LOCALAPPDATA%\CaixaLume\dados\caixalume.db` nas instalações novas (instalações anteriores continuam usando o banco existente). No primeiro acesso, crie o usuário administrador e abra o caixa antes de registrar vendas.
 
 Para instalação por pacote e atualização preservando os dados, consulte [Instalação e Operação](docs/INSTALACAO_E_OPERACAO.md), [Atualizações](docs/ATUALIZACOES.md) e [Releases](https://github.com/gabryelle-lima/CaixaLume/releases), quando disponíveis.
 
@@ -67,11 +67,11 @@ Para instalação por pacote e atualização preservando os dados, consulte [Ins
 
 ```powershell
 dotnet build
-dotnet build Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests.csproj --no-restore
-dotnet run --project Tests/MercadinhoPdv.IntegrationTests/MercadinhoPdv.IntegrationTests.csproj --no-build --no-restore
+dotnet build Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-restore
+dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build --no-restore
 ```
 
-Os testes de integração abrangem autenticação, migrações, estoque, vendas, cancelamentos, caixa, despesas, relatórios e backup/restauração, utilizando bancos de teste temporários. Consulte também [Auditoria do PDV](AUDITORIA_PDV.md), [Análise de UX](ANALISE_UX.md) e [Auditoria de Arquitetura](docs/ARCHITECTURE_AUDIT.md).
+Os testes de integração abrangem autenticação, migrações, estoque, vendas, cancelamentos, caixa, despesas, relatórios e backup/restauração, utilizando bancos de teste temporários. Consulte também [Auditoria do PDV](docs/auditorias/AUDITORIA_PDV.md), [Análise de UX](docs/auditorias/ANALISE_UX.md) e [Auditoria de Arquitetura](docs/ARCHITECTURE_AUDIT.md).
 
 ## Limitações e próximos passos
 
@@ -82,3 +82,34 @@ O sistema **não emite NFC-e/NF-e** e não integra com SEFAZ, SAT/MFE, adquirent
 O CaixaLume compõe meu portfólio de desenvolvimento de software, reunindo problemas reais de gestão comercial e decisões técnicas que envolvem banco de dados, segurança, testes, arquitetura e experiência do usuário.
 
 **Desenvolvimento:** [Gabryelle Lima](https://github.com/gabryelle-lima)
+
+## Organização do projeto
+
+- `CaixaLume.csproj`: aplicativo Windows; `Forms`, `Web`, `Services`, `Data` e `Models` separam interface, regras e persistência.
+- `Server`: servidor de gestão de instalações e acesso administrativo.
+- `Tests/CaixaLume.IntegrationTests`, `Tests/CaixaLume.Management.UnitTests` e `Tests/Web`: testes automatizados.
+- `scripts`: instalação, execução, publicação e manutenção; os atalhos `.cmd` continuam na raiz.
+- `docs/auditorias`: relatórios das etapas anteriores; demais manuais e roteiros em `docs`.
+- `artifacts`: resultados locais de compilação e validação, ignorados pelo Git.
+
+A identidade interna dos projetos é CaixaLume. As variáveis `CAIXALUME_DATABASE` e `CAIXALUME_AMBIENTE` substituem os nomes anteriores, que continuam aceitos por compatibilidade. O banco e as imagens já existentes não são removidos nem transferidos automaticamente. Veja [padronização](docs/PADRONIZACAO_CAIXALUME.md).
+
+## Servidor de gestão e validação completa
+
+O projeto inclui o servidor ASP.NET Core em `Server/CaixaLume.Management.csproj`, com SQLite próprio, cadastro de estabelecimentos e acompanhamento de instalações. O painel possui conta administrativa, senha, autenticador e sessões revogáveis. Ele não recebe vendas nem fornece controle remoto do computador. Consulte [Gestão central](docs/GESTAO_CENTRAL.md) e [Acesso ao Aurora](docs/ACESSO_PAINEL_AURORA.md).
+
+Os testes específicos podem ser executados após a compilação:
+
+```powershell
+dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --security
+dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --financial
+dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --stock
+dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --ux
+dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --central
+dotnet run --project Tests/CaixaLume.Management.UnitTests/CaixaLume.Management.UnitTests.csproj
+node --test Tests/Web/*.test.js
+dotnet build Server/CaixaLume.Management.csproj
+python Tests/management_server_test.py
+```
+
+A suíte Python de HTTPS também requer o pacote `cryptography`. Resultado local desta padronização: **224 verificações aprovadas**, sem contar interrupções como aprovação. Os testes de recuperação usam arquivos temporários e precisam de permissão para mover arquivos. A validação visual completa no equipamento de uso e a atualização da instalação Linux são verificações separadas.

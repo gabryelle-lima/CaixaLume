@@ -8,11 +8,21 @@ try {
     $env:TEMP = Join-Path $projectRoot 'artifacts\validation-temp'
     $env:TMP = $env:TEMP
     New-Item -ItemType Directory -Path $env:TEMP -Force | Out-Null
-    & dotnet build Tests\MercadinhoPdv.IntegrationTests\MercadinhoPdv.IntegrationTests.csproj --configuration $Configuracao -p:UseAppHost=false
+    & dotnet build Tests\CaixaLume.IntegrationTests\CaixaLume.IntegrationTests.csproj --configuration $Configuracao -p:UseAppHost=false
     if ($LASTEXITCODE -ne 0) { throw 'A compilação falhou.' }
-    & dotnet "Tests\MercadinhoPdv.IntegrationTests\bin\$Configuracao\net10.0-windows\MercadinhoPdv.IntegrationTests.dll"
+    & dotnet "Tests\CaixaLume.IntegrationTests\bin\$Configuracao\net10.0-windows\CaixaLume.IntegrationTests.dll"
     if ($LASTEXITCODE -ne 0) { throw 'A suíte C# falhou.' }
-    & node --test Tests\Web\pdv-domain.test.js Tests\Web\bridge.test.js
+    foreach ($suite in @('--security','--financial','--stock','--ux','--central')) {
+        & dotnet "Tests\CaixaLume.IntegrationTests\bin\$Configuracao\net10.0-windows\CaixaLume.IntegrationTests.dll" $suite
+        if ($LASTEXITCODE -ne 0) { throw "A suite $suite falhou." }
+    }
+    & dotnet run --project Tests\CaixaLume.Management.UnitTests\CaixaLume.Management.UnitTests.csproj --configuration $Configuracao
+    if ($LASTEXITCODE -ne 0) { throw 'Os testes de autenticacao falharam.' }
+    & dotnet build Server\CaixaLume.Management.csproj --configuration Debug
+    if ($LASTEXITCODE -ne 0) { throw 'A compilacao do servidor falhou.' }
+    & python Tests\management_server_test.py
+    if ($LASTEXITCODE -ne 0) { throw 'Os testes do servidor falharam.' }
+    & node --test Tests\Web\*.test.js
     if ($LASTEXITCODE -ne 0) { throw 'A suíte JavaScript falhou.' }
     foreach ($script in Get-ChildItem -LiteralPath Web -Filter '*.js') {
         & node --check $script.FullName

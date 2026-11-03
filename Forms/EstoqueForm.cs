@@ -1,8 +1,8 @@
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
-using MercadinhoPdv.Diagnostics;
+using CaixaLume.Models;
+using CaixaLume.Services;
+using CaixaLume.Diagnostics;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class EstoqueForm : Form
 {
@@ -33,11 +33,11 @@ internal sealed class EstoqueForm : Form
     private void BuildLayout()
     {
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, Padding = new Padding(14) };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
-        var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
+        var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink };
         filters.Controls.AddRange([_search, _category, _unit, _status]);
         _category.Margin = new Padding(8, 3, 0, 0);
         _unit.Margin = new Padding(8, 3, 0, 0);
@@ -190,8 +190,8 @@ internal sealed class EstoqueForm : Form
     private void ShowHistory()
     {
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Padding = new Padding(12) };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 42)); root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, AutoScroll = true };
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize)); root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        var filters = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = true, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink };
         var search = new TextBox { Width = 220, PlaceholderText = "Produto ou código" };
         if (SelectedProduct() is { } selected) search.Text = selected.Nome;
         var start = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 125, Value = DateTime.Today.AddDays(-30) };

@@ -1,7 +1,7 @@
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Forms;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Data;
+using CaixaLume.Forms;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
 internal static class UiFixture
 {
@@ -10,7 +10,7 @@ internal static class UiFixture
         string path = Path.GetFullPath(args[1]);
         if (!path.EndsWith(".ui-test.db", StringComparison.OrdinalIgnoreCase) || File.Exists(path))
             throw new InvalidOperationException("Informe um arquivo novo com sufixo .ui-test.db para a inspeção visual isolada.");
-        Environment.SetEnvironmentVariable("MERCADINHOPDV_DATABASE", path);
+        Environment.SetEnvironmentVariable("CAIXALUME_DATABASE", path);
         DatabaseInitializer.Initialize();
         var users = new UsuarioService();
         users.CriarAdministradorInicial("Administrador de teste", "teste-ui", "senha-teste-ui-123");

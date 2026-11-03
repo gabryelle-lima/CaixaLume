@@ -1,7 +1,7 @@
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Diagnostics;
+using CaixaLume.Data;
+using CaixaLume.Diagnostics;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class ConfiguracoesForm : Form
 {
@@ -53,7 +53,7 @@ internal sealed class ConfiguracoesForm : Form
 
     private void CreateBackup()
     {
-        using var dialog = new SaveFileDialog { Filter = "Banco SQLite (*.db)|*.db", FileName = $"mercadinho-{DateTime.Now:yyyyMMdd-HHmm}.db" };
+        using var dialog = new SaveFileDialog { Filter = "Banco SQLite (*.db)|*.db", FileName = $"caixalume-{DateTime.Now:yyyyMMdd-HHmm}.db" };
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         try { _backup.Criar(dialog.FileName); UiDialog.Success(this, "Backup concluído", "O arquivo de backup foi criado e validado."); }
         catch (Exception exception) { AppLogger.Error(exception, "Criar backup"); UiDialog.Warning(this, "Backup", exception.Message); }

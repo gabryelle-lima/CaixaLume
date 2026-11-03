@@ -1,7 +1,7 @@
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 internal sealed class MainForm : Form
 {
@@ -27,7 +27,7 @@ internal sealed class MainForm : Form
 
     public MainForm(bool modoAlternativo = false)
     {
-        Text = "Mercadinho PDV";
+        Text = "CaixaLume";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(900, 600);
         Size = new Size(1280, 820);

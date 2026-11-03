@@ -1,7 +1,7 @@
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
+using CaixaLume.Data;
+using CaixaLume.Models;
 
-namespace MercadinhoPdv.Services;
+namespace CaixaLume.Services;
 
 public sealed class ProdutoService
 {
@@ -9,14 +9,14 @@ public sealed class ProdutoService
 
     public List<Produto> Listar(string? pesquisa) => _repository.Listar(pesquisa);
     public Produto? BuscarPorId(int id) => _repository.BuscarPorId(id);
-    public Produto? BuscarPorCodigoBarras(string codigo) => _repository.BuscarPorCodigoBarras(codigo);
+    public Produto? BuscarPorCodigoBarras(string codigo) => string.IsNullOrWhiteSpace(codigo) ? null : _repository.BuscarPorCodigoBarras(codigo.Trim());
     public List<OpcaoCadastro> ListarCategorias(int? selectedId = null) => _repository.ListarCategorias(selectedId);
     public List<OpcaoCadastro> ListarFornecedores(int? selectedId = null) => _repository.ListarFornecedores(selectedId);
 
     public void Salvar(Produto produto)
     {
         Autorizacao.ExigirAdministrador();
-        produto.Nome = produto.Nome.Trim().ToUpperInvariant();
+        produto.Nome = (produto.Nome ?? "").Trim().ToUpperInvariant();
         produto.Marca = string.IsNullOrWhiteSpace(produto.Marca) ? null : produto.Marca.Trim().ToUpperInvariant();
         produto.ImagemUrl = string.IsNullOrWhiteSpace(produto.ImagemUrl) ? null : produto.ImagemUrl.Trim();
         produto.CodigoBarras = string.IsNullOrWhiteSpace(produto.CodigoBarras) ? null : produto.CodigoBarras.Trim();

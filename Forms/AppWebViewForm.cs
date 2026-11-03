@@ -3,10 +3,10 @@ using System.Globalization;
 using System.Diagnostics;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Models;
+using CaixaLume.Services;
 
-namespace MercadinhoPdv.Forms;
+namespace CaixaLume.Forms;
 
 /// <summary>Shell web local apresentado depois da autenticação.</summary>
 internal sealed class AppWebViewForm : Form
@@ -23,6 +23,8 @@ internal sealed class AppWebViewForm : Form
     private readonly SemaphoreSlim _operationResource = new(1, 1);
     private int _activeOperations;
     private readonly Dictionary<string, string> _pickedProductImages = new();
+    private string? _pendingInvoiceXml;
+    private string? _pendingInvoiceToken;
     private readonly HashSet<ulong> _blockedNavigationIds = new();
     private readonly Label _loading = new()
     {
@@ -46,7 +48,7 @@ internal sealed class AppWebViewForm : Form
     public AppWebViewForm(Task<CoreWebView2Environment> environment)
     {
         _environment = environment;
-        Text = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE"))
+        Text = string.IsNullOrWhiteSpace(CaixaLume.Data.CaminhosAplicacao.BancoConfigurado)
             ? "CaixaLume · Mercado"
             : "AMBIENTE DE TESTE  |  CaixaLume · Mercado";
         WindowState = FormWindowState.Maximized;
@@ -72,7 +74,7 @@ internal sealed class AppWebViewForm : Form
             _startupWatch.Start();
             _startupTimeout.Start();
             string webRoot = Path.Combine(AppContext.BaseDirectory, "Web");
-            foreach (string asset in new[] { "shell.html", "shell.js", "shell.css", "home.html", "index.html", "products.html", "reports.html", "modules.html", "home.js", "app.js", "products.js", "reports.js", "modules.js", "bridge.js", "ui.js", "pdv-domain.js", "home.css", "products.css", "reports.css", "modules.css", "styles.css" })
+            foreach (string asset in new[] { "shell.html", "shell.js", "shell.css", "home.html", "index.html", "products.html", "reports.html", "modules.html", "home.js", "app.js", "products.js", "reports.js", "modules.js", "bridge.js", "ui-input.js", "ui.css", "ui.js", "pdv-domain.js", "home.css", "products.css", "reports.css", "modules.css", "styles.css" })
                 if (!File.Exists(Path.Combine(webRoot, asset))) throw new FileNotFoundException($"Arquivo da interface local ausente: {asset}.");
             await _browser.EnsureCoreWebView2Async(await _environment);
             if (_fallbackRequested || IsDisposed) return;
@@ -296,6 +298,71 @@ internal sealed class AppWebViewForm : Form
                     });
                     response = new { version = 1, id, ok = true, data = result };
                 }
+                else if (action == "stock.invoice.select")
+                {
+                    ValidateEnvelope(root, id);
+                    Autorizacao.ExigirAdministrador();
+                    _pendingInvoiceXml = null;
+                    _pendingInvoiceToken = null;
+                    using var picker = new OpenFileDialog { Title = "Selecionar XML da NF-e de compra", Filter = "Nota fiscal eletrônica (*.xml)|*.xml", CheckFileExists = true };
+                    if (picker.ShowDialog(this) == DialogResult.OK)
+                    {
+                        string path = picker.FileName;
+                        string xml = await Task.Run(() =>
+                        {
+                            var file = new FileInfo(path);
+                            if (file.Length is <= 0 or > 8_388_608) throw new InvalidOperationException("Escolha um XML de até 8 MB.");
+                            string content = File.ReadAllText(path);
+                            if (content.Length > 8_388_608) throw new InvalidOperationException("O XML excede o tamanho permitido.");
+                            return content;
+                        });
+                        var selectionData = await Task.Run(() => new
+                        {
+                            preview = new NfeImportService().Preview(xml),
+                            products = new EstoqueService().Listar().Where(product => product.Ativo).ToList()
+                        });
+                        string token = Guid.NewGuid().ToString("N");
+                        _pendingInvoiceXml = xml;
+                        _pendingInvoiceToken = token;
+                        response = new { version = 1, id, ok = true, data = new { token, selectionData.preview, selectionData.products } };
+                    }
+                    else response = new { version = 1, id, ok = true, data = new { cancelled = true } };
+                }
+                else if (action == "stock.invoice.import")
+                {
+                    ValidateEnvelope(root, id);
+                    Autorizacao.ExigirAdministrador();
+                    JsonElement payload = root.GetProperty("payload");
+                    string token = payload.GetProperty("token").GetString() ?? "";
+                    if (string.IsNullOrWhiteSpace(_pendingInvoiceXml) || token != _pendingInvoiceToken)
+                        throw new InvalidOperationException("Selecione o XML novamente antes de confirmar a entrada.");
+                    var selections = payload.GetProperty("selections").Deserialize<List<NfeImportSelection>>(WebJsonOptions)
+                        ?? throw new InvalidOperationException("Os itens da nota não foram informados.");
+                    string xml = _pendingInvoiceXml;
+                    var imported = await Task.Run(() => new NfeImportService().Import(xml, selections));
+                    _pendingInvoiceXml = null;
+                    _pendingInvoiceToken = null;
+                    response = new { version = 1, id, ok = true, data = imported };
+                }
+                else if (action == "stock.invoice.exportExcel")
+                {
+                    ValidateEnvelope(root, id);
+                    Autorizacao.ExigirAdministrador();
+                    var (start, end) = ReadReportPeriod(root);
+                    using var dialog = new SaveFileDialog { Title = "Salvar relatório de entradas NF-e", Filter = "Pasta de trabalho do Excel (*.xlsx)|*.xlsx", FileName = $"entradas-nfe-{start:yyyyMMdd}-{end:yyyyMMdd}.xlsx", AddExtension = true, DefaultExt = "xlsx" };
+                    bool saved = false;
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        string destination = dialog.FileName;
+                        await Task.Run(() =>
+                        {
+                            var report = new NfeImportService().List(start, end);
+                            RelatorioExcelService.SalvarEntradasNfe(report, new ConfiguracaoService().ObterNomeLoja(), start, end, destination);
+                        });
+                        saved = true;
+                    }
+                    response = new { version = 1, id, ok = true, data = new { saved } };
+                }
                 else if (action == "management.backup")
                 {
                     ValidateEnvelope(root, id);
@@ -492,6 +559,7 @@ internal sealed class AppWebViewForm : Form
         product.PrecoCusto = draft.PrecoCusto;
         product.PrecoVenda = draft.PrecoVenda;
         product.UnidadeMedida = draft.UnidadeMedida ?? "UN";
+        if (product.Id != 0) product.Versao = draft.Versao;
         product.EstoqueAtual = draft.EstoqueAtual;
         product.EstoqueMinimo = draft.EstoqueMinimo;
         product.DataValidade = draft.DataValidade?.Date;
@@ -534,7 +602,7 @@ internal sealed class AppWebViewForm : Form
 
     private sealed record ProductDraft(int Id, string? Nome, string? CodigoBarras, string? Marca, string? ImagemUrl,
         int? CategoriaId, int? FornecedorId, decimal PrecoCusto, decimal PrecoVenda, string? UnidadeMedida,
-        decimal EstoqueAtual, decimal EstoqueMinimo, DateTime? DataValidade, string? ImageToken, bool RemoveImage);
+        decimal EstoqueAtual, decimal EstoqueMinimo, DateTime? DataValidade, string? ImageToken, bool RemoveImage, long? Versao = null);
 
     private object GetProductsData()
     {
@@ -561,7 +629,7 @@ internal sealed class AppWebViewForm : Form
             products = products.Select(product => new
             {
                 product.Id, product.Nome, product.CodigoBarras, product.CategoriaNome, product.UnidadeMedida,
-                product.PrecoVenda, product.PrecoCusto, product.EstoqueAtual, product.EstoqueMinimo, product.DataValidade, product.Ativo,
+                product.Versao, product.PrecoVenda, product.PrecoCusto, product.EstoqueAtual, product.EstoqueMinimo, product.DataValidade, product.Ativo,
                 product.Marca, product.CategoriaId, product.FornecedorId, product.ImagemUrl,
                 hasLocalImage = !string.IsNullOrWhiteSpace(product.LocalImagePath)
             }).ToList()

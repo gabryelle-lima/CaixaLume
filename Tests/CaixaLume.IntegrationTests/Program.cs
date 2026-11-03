@@ -1,18 +1,52 @@
 using System.Globalization;
-using MercadinhoPdv.Data;
-using MercadinhoPdv.Models;
-using MercadinhoPdv.Services;
+using CaixaLume.Data;
+using CaixaLume.Models;
+using CaixaLume.Services;
+
+if (args.Length >= 1 && args[0] == "--crash-financial") return FinancialScenarios.CrashChild();
 
 if (args.Length >= 2 && args[0] == "--interface")
     return UiFixture.Run(args);
 
-string root = Path.Combine(Path.GetTempPath(), "MercadinhoPdvIntegration", Guid.NewGuid().ToString("N"));
+string root = Path.Combine(Path.GetTempPath(), "CaixaLumeIntegration", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
-Environment.SetEnvironmentVariable("MERCADINHOPDV_DATABASE", Path.Combine(root, "legacy.db"));
+Environment.SetEnvironmentVariable("CAIXALUME_DATABASE", Path.Combine(root, "legacy.db"));
 int passed = 0;
 
 try
 {
+    if (args.Contains("--central")) return CentralScenarios.Run();
+    if (args.Contains("--ux")) return UxScenarios.Run(root);
+    if (args.Contains("--stock")) return StockScenarios.Run(root);
+    if (args.Contains("--financial")) return FinancialScenarios.Run(root);
+    if (args.Contains("--security")) return SecurityScenarios.Run();
+    Check("Identidade: instalação nova usa pasta CaixaLume", () =>
+        Equal(Path.Combine(root, "CaixaLume", "dados", "caixalume.db"), CaminhosAplicacao.ResolverBanco(root)));
+    Check("Identidade: banco legado continua selecionado sem alterações", () =>
+    {
+        string legacy = Path.Combine(root, "MercadinhoPdv", "dados", "mercadinho.db");
+        Directory.CreateDirectory(Path.GetDirectoryName(legacy)!);
+        File.WriteAllText(legacy, "compatibilidade");
+        Equal(legacy, CaminhosAplicacao.ResolverBanco(root));
+        Equal("compatibilidade", File.ReadAllText(legacy));
+    });
+    Check("Identidade: variável antiga continua aceita e a nova tem prioridade", () =>
+    {
+        string? current = Environment.GetEnvironmentVariable("CAIXALUME_DATABASE");
+        string? legacy = Environment.GetEnvironmentVariable("MERCADINHOPDV_DATABASE");
+        try
+        {
+            Environment.SetEnvironmentVariable("MERCADINHOPDV_DATABASE", "antigo.db");
+            Equal(current!, CaminhosAplicacao.BancoConfigurado!);
+            Environment.SetEnvironmentVariable("CAIXALUME_DATABASE", null);
+            Equal("antigo.db", CaminhosAplicacao.BancoConfigurado!);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CAIXALUME_DATABASE", current);
+            Environment.SetEnvironmentVariable("MERCADINHOPDV_DATABASE", legacy);
+        }
+    });
     CreateLegacyDatabase();
     DatabaseInitializer.Initialize();
     DatabaseInitializer.Initialize();
@@ -25,7 +59,7 @@ try
         Equal(1, new ProdutoService().ListarCategorias().Count == 0 ? 0 : 1);
         using var db = new DatabaseConnection(DatabaseInitializer.DatabasePath);
         Equal(true, db.Query("PRAGMA table_info(Produtos);").Any(column => Convert.ToString(column["name"]) == "LocalImagePath"));
-        Equal(3L, Convert.ToInt64(db.Query("SELECT MAX(Version) AS Version FROM SchemaMigrations;").Single()["Version"], CultureInfo.InvariantCulture));
+        Equal(8L, Convert.ToInt64(db.Query("SELECT MAX(Version) AS Version FROM SchemaMigrations;").Single()["Version"], CultureInfo.InvariantCulture));
         Equal(true, db.Query("PRAGMA table_info(ItensVenda);").Any(column => Convert.ToString(column["name"]) == "PrecoCustoUnitario"));
         Equal(true, Directory.GetFiles(root, "*.pre-migration-v1-*.bak").Length == 1);
     });
@@ -363,7 +397,7 @@ catch (Exception exception)
 }
 finally
 {
-    Environment.SetEnvironmentVariable("MERCADINHOPDV_DATABASE", null);
+    Environment.SetEnvironmentVariable("CAIXALUME_DATABASE", null);
     try { Directory.Delete(root, recursive: true); } catch { }
 }
 
