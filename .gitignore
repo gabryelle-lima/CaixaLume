@@ -24,3 +24,12 @@ artifacts/
 *.sqlite
 *.sqlite-*
 **/*.authkeys/
+
+# Procedimentos particulares da instalacao; mantidos apenas localmente.
+.local/
+/Como-acessar-o-Aurora.txt
+/docs/ACESSO_PAINEL_AURORA.md
+/scripts/Abrir-Painel-Aurora.ps1
+/scripts/Instalar-Gestao-no-Aurora.ps1
+/scripts/Configurar-Wifi-Aurora.ps1
+/scripts/gestao-linux/configurar-wifi-https.sh

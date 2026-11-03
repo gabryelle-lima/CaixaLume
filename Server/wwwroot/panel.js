@@ -8,7 +8,7 @@ function clearSecrets(){for(const id of ['bootstrap-token','setup-password','set
 async function api(path,method='GET',body){
  const headers={'Content-Type':'application/json'};
  if(method!=='GET'){headers['X-CaixaLume-Request']='1';if(csrf)headers['X-CSRF-Token']=csrf;}
- let r;try{r=await fetch(path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',credentials:'same-origin'});}catch{throw new Error('Não foi possível conectar. Confira se o Aurora e o túnel SSH estão ativos.');}
+ let r;try{r=await fetch(path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',credentials:'same-origin'});}catch{throw new Error('Não foi possível conectar. Confira se o servidor e o túnel SSH estão ativos.');}
  if(!r.ok){let data;try{data=await r.json();}catch{}if(r.status===401&&path.startsWith('/admin')){clearSecrets();$('stores').replaceChildren();csrf='';screen('login');}
  const error=new Error(data?.message||(r.status===401?'Acesso recusado. Confira os dados e o código. Após várias tentativas, aguarde 5 minutos.':r.status===429?'Muitas tentativas. Aguarde um minuto.':r.status===403?'Acesso recusado. Abra o painel pelo túnel SSH e atualize a página.':`Não foi possível concluir (HTTP ${r.status}).`));error.status=r.status;throw error;}
  return r.status===204?null:r.json();

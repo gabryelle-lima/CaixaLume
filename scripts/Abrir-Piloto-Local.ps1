@@ -32,5 +32,6 @@ finally { Pop-Location }
 $program = Join-Path $output 'CaixaLume.exe'
 if (-not (Test-Path -LiteralPath $program -PathType Leaf)) { throw 'O executável local não foi criado.' }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Iniciar-Piloto.ps1') -Destination $output
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Caminhos-CaixaLume.ps1') -Destination $output
 Write-Output "Versão local: $output"
 & (Join-Path $output 'Iniciar-Piloto.ps1')

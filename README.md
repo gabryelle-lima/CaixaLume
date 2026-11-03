@@ -1,115 +1,96 @@
-# CaixaLume — Sistema de Gestão e PDV
+# CaixaLume — Gestão comercial e ponto de venda
 
-**Aplicação desktop de gestão comercial desenvolvida em C#/.NET 10, com Windows Forms, WebView2 e SQLite.**
+Aplicação para a operação de pequenos mercados, com **C#/.NET 10, Windows Forms, WebView2 e SQLite**. Reúne vendas, estoque, caixa, usuários e relatórios em um aplicativo Windows que opera localmente, sem depender de conexão com a internet para registrar vendas.
 
-O CaixaLume é um projeto de software voltado à operação de pequenos comércios. Reúne frente de caixa (PDV), estoque, gestão de usuários, movimentações financeiras e relatórios. Foi desenvolvido com atenção especial a **regras de negócio, integridade dos dados, controle de acesso e testes de integração**.
+**Estado do projeto:** versão de teste 0.1.3, em evolução. A implementação atual contém melhorias posteriores ao pacote publicado dessa versão. Ainda requer validação de implantação e avaliação fiscal antes do uso comercial em produção.
 
-> **Status:** versão de teste **0.1.3**. Projeto em evolução; ainda não está homologado para uso fiscal ou operação comercial em produção.
+## Problema e solução
 
-## Tecnologias
-
-| Camada | Tecnologia |
-| --- | --- |
-| Aplicação desktop e serviços | C# / .NET 10, Windows Forms |
-| Interface | HTML, CSS, JavaScript, WebView2 |
-| Persistência | SQLite |
-| Qualidade | Testes de integração em .NET |
-| Distribuição | Publicação e instalador para Windows |
-
-## Arquitetura resumida
-
-```mermaid
-flowchart TD
-    A[Interface WebView2] --> B[Ponte de comunicação C#]
-    B --> C[Serviços e regras de negócio]
-    C --> D[Persistência SQLite]
-    C --> E[Auditoria e permissões]
-    D --> F[Backup e migrações]
-```
-
-A interface HTML/CSS/JavaScript funciona localmente dentro do aplicativo Windows. A comunicação com os serviços .NET ocorre por uma ponte WebView2, mantendo as regras de negócio na aplicação C#.
+O CaixaLume organiza a rotina do operador — localizar produtos, cobrar, registrar pagamentos e fechar o caixa — mantendo a consistência entre venda, estoque e movimentação financeira. O servidor de gestão é opcional e separado: acompanha estabelecimentos e instalações sem receber o histórico de vendas nem bloquear a operação local quando estiver indisponível.
 
 ## Funcionalidades
 
-- **PDV e vendas:** pesquisa por produto ou código de barras, carrinho, descontos e acréscimos configuráveis, pagamento em dinheiro/PIX/cartão, troco e confirmação de venda.
-- **Estoque:** cadastro de produtos por unidade ou peso, entradas, saídas, ajustes, validade, fornecedores e histórico.
-- **Caixa e financeiro:** abertura, suprimento, sangria, despesas, conferência, fechamento e histórico.
-- **Relatórios:** vendas, faturamento, custos, estimativa de lucro bruto e margem; exportações em PDF/Excel.
-- **Usuários e segurança:** perfis e permissões, auditoria de ações e derivação de senhas com PBKDF2-SHA256 e salt aleatório.
-- **Confiabilidade:** operações transacionais, proteção contra repetição de checkout, migrações versionadas e rotinas de backup/restauração.
+- **Vendas:** busca por nome ou código de barras, produtos UN/KG, quantidades fracionárias por peso, descontos e acréscimos configuráveis, pagamentos mistos e troco.
+- **Caixa:** abertura, suprimento, sangria, despesas, conferência e fechamento com histórico.
+- **Estoque:** cadastro, entradas, saídas, ajustes auditados, estoque mínimo, validade, categorias e fornecedores.
+- **Consultas:** histórico de vendas paginado, cancelamentos administrativos, relatórios e exportações.
+- **Segurança:** senhas derivadas com PBKDF2-SHA256, permissões por perfil/usuário, autorização no backend e proteção do último administrador ativo.
+- **Gestão de instalações:** serviço ASP.NET Core com SQLite independente, vínculo por convite temporário, revogação de dispositivos e painel com senha, autenticador TOTP e sessões revogáveis.
 
-## Decisões técnicas e desafios
+Os pagamentos são registrados manualmente pelo operador. O sistema não simula confirmação bancária. A importação de XML de compra auxilia a entrada de mercadorias; não constitui emissão fiscal.
 
-**Integridade financeira:** vendas e alterações críticas precisam preservar a consistência entre registros, estoque e caixa. O projeto utiliza operações transacionais e testes para cenários de venda, cancelamento e movimentação.
+## Arquitetura
 
-**Evolução do banco de dados:** migrações são registradas em `SchemaMigrations`, executadas em transação e precedidas de snapshot do banco existente.
+```mermaid
+flowchart LR
+    UI[Windows Forms e WebView2] --> Bridge[Pontes C#]
+    Bridge --> Services[Serviços e autorização]
+    Services --> DB[(SQLite local)]
+    Services --> Audit[Auditoria e histórico]
+    Client[Cliente opcional de gestão] -->|HTTPS: metadados da instalação| Server[ASP.NET Core]
+    Server --> Registry[(SQLite de gestão)]
+```
 
-**Controle de acesso:** separação de operações administrativas e de operador, com permissões verificadas pelos serviços e trilhas de auditoria.
+As regras financeiras, permissões e persistência permanecem no backend C#. A interface HTML/CSS/JavaScript é carregada localmente no WebView2. O banco transacional de cada instalação e o registro central de dispositivos têm responsabilidades distintas.
 
-**Recuperação:** backups consistentes do SQLite e validações durante a restauração. Imagens locais ainda exigem cópia separada para recuperação em outro computador.
+| Decisão | Aplicação no projeto |
+| --- | --- |
+| Transações SQLite | Venda, itens, estoque, pagamentos e movimentações são confirmados em conjunto. |
+| Identificador de operação | Reenvios e duplo clique reutilizam a venda; conteúdo divergente é recusado. |
+| Valores monetários | Cálculos e arredondamentos no backend, com pagamentos persistidos em centavos. |
+| Migrações versionadas | Atualizações compatíveis com bancos existentes e snapshot antes de migrações. |
+| Auditoria | Alterações administrativas e de estoque registram usuário, motivo e histórico. |
+| Recuperação | Backup consistente e validação de integridade na restauração. |
 
-## Executar localmente
+## Executar o aplicativo
 
-**Requisitos:** Windows e SDK .NET 10. Para executar a partir do código-fonte:
+Requisitos: Windows, SDK .NET 10 e runtime WebView2. Em um terminal:
 
 ```powershell
 git clone https://github.com/gabryelle-lima/CaixaLume.git
 cd CaixaLume
-dotnet restore
-dotnet run
+dotnet restore CaixaLume.csproj
+dotnet run --project CaixaLume.csproj
 ```
 
-O banco SQLite é armazenado no perfil local do Windows, em `%LOCALAPPDATA%\CaixaLume\dados\caixalume.db` nas instalações novas (instalações anteriores continuam usando o banco existente). No primeiro acesso, crie o usuário administrador e abra o caixa antes de registrar vendas.
+No primeiro acesso, crie o administrador. Depois cadastre os produtos e abra o caixa. Instalações novas usam `%LOCALAPPDATA%/CaixaLume/dados/caixalume.db`; instalações anteriores preservam o banco existente. Não há usuário ou senha padrão.
 
-Para instalação por pacote e atualização preservando os dados, consulte [Instalação e Operação](docs/INSTALACAO_E_OPERACAO.md), [Atualizações](docs/ATUALIZACOES.md) e [Releases](https://github.com/gabryelle-lima/CaixaLume/releases), quando disponíveis.
+Para uma demonstração com banco separado, consulte o [guia de demonstração](docs/DEMONSTRACAO.md). Para instalar pacotes e atualizar, consulte [instalação e operação](docs/INSTALACAO_E_OPERACAO.md).
 
-## Testes
+## Testes e evidências
 
 ```powershell
-dotnet build
-dotnet build Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-restore
-dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build --no-restore
+dotnet build Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj
+dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build
 ```
 
-Os testes de integração abrangem autenticação, migrações, estoque, vendas, cancelamentos, caixa, despesas, relatórios e backup/restauração, utilizando bancos de teste temporários. Consulte também [Auditoria do PDV](docs/auditorias/AUDITORIA_PDV.md), [Análise de UX](docs/auditorias/ANALISE_UX.md) e [Auditoria de Arquitetura](docs/ARCHITECTURE_AUDIT.md).
+A execução local completa da [base de referência](https://github.com/gabryelle-lima/CaixaLume/commit/c31a7114d5dbe45311d93cbed5d19cf4be19b57d), em **02/11/2026**, concluiu **224 verificações**: 76 gerais, 13 de segurança, 20 financeiras, 15 de estoque, 8 de interface, 12 do cliente de gestão, 54 do servidor, 6 vetores TOTP e 20 de JavaScript. Esse resultado é um registro de execução local, não uma garantia de aprovação em qualquer ambiente nem de homologação comercial.
+
+A cobertura inclui reenvios concorrentes, falhas durante gravação, interrupção forçada do processo, cancelamentos, proteção de usuários e restauração de backups. Veja [comandos, dependências e limites da validação](docs/TESTES.md).
+
+## Navegação pelo código
+
+| Diretório | Responsabilidade |
+| --- | --- |
+| `Forms`, `Web` | Interface Windows e telas locais do WebView2. |
+| `Services`, `Models`, `Data` | Regras de negócio, modelos, repositórios e migrações. |
+| `Server` | API e painel de gestão de instalações. |
+| `Tests` | Testes de integração, interface, JavaScript e autenticação. |
+| `scripts` | Compilação, validação, publicação e instalação. |
+| `docs` | Guias técnicos, decisões e relatórios históricos. |
+
+Comece por [VendaService](Services/VendaService.cs), [VendaRepository](Data/VendaRepository.cs), [Autorizacao](Services/Autorizacao.cs) e pelos [cenários financeiros](Tests/CaixaLume.IntegrationTests/FinancialScenarios.cs).
 
 ## Limitações e próximos passos
 
-O sistema **não emite NFC-e/NF-e** e não integra com SEFAZ, SAT/MFE, adquirentes, TEF ou conciliação bancária. Ainda requer avaliação fiscal/contábil, testes de recuperação em implantação real e revisão das rotinas de segurança e operação antes do uso comercial.
+- Não emite NFC-e/NF-e nem integra com SEFAZ, TEF, adquirentes ou conciliação bancária.
+- A importação de XML tem limitações documentadas, incluindo o tratamento de CNPJ.
+- Imagens locais precisam de cópia separada na recuperação em outro computador.
+- A interface e os periféricos exigem validação no equipamento de uso.
+- A implantação ainda precisa consolidar testes de atualização, recuperação e operação em piloto real.
 
-## Sobre o projeto
+Consulte o [roadmap](docs/ROADMAP.md), a [gestão central](docs/GESTAO_CENTRAL.md) e o [índice da documentação](docs/README.md).
 
-O CaixaLume compõe meu portfólio de desenvolvimento de software, reunindo problemas reais de gestão comercial e decisões técnicas que envolvem banco de dados, segurança, testes, arquitetura e experiência do usuário.
+## Sobre o desenvolvimento
 
-**Desenvolvimento:** [Gabryelle Lima](https://github.com/gabryelle-lima)
-
-## Organização do projeto
-
-- `CaixaLume.csproj`: aplicativo Windows; `Forms`, `Web`, `Services`, `Data` e `Models` separam interface, regras e persistência.
-- `Server`: servidor de gestão de instalações e acesso administrativo.
-- `Tests/CaixaLume.IntegrationTests`, `Tests/CaixaLume.Management.UnitTests` e `Tests/Web`: testes automatizados.
-- `scripts`: instalação, execução, publicação e manutenção; os atalhos da Área de Trabalho abrem as funções de uso diário.
-- `docs/auditorias`: relatórios das etapas anteriores; demais manuais e roteiros em `docs`.
-- `artifacts`: resultados locais de compilação e validação, ignorados pelo Git.
-
-A identidade interna dos projetos é CaixaLume. As variáveis `CAIXALUME_DATABASE` e `CAIXALUME_AMBIENTE` substituem os nomes anteriores, que continuam aceitos por compatibilidade. O banco e as imagens já existentes não são removidos nem transferidos automaticamente. Veja [padronização](docs/PADRONIZACAO_CAIXALUME.md).
-
-## Servidor de gestão e validação completa
-
-O projeto inclui o servidor ASP.NET Core em `Server/CaixaLume.Management.csproj`, com SQLite próprio, cadastro de estabelecimentos e acompanhamento de instalações. O painel possui conta administrativa, senha, autenticador e sessões revogáveis. Ele não recebe vendas nem fornece controle remoto do computador. Consulte [Gestão central](docs/GESTAO_CENTRAL.md) e [Acesso ao Aurora](docs/ACESSO_PAINEL_AURORA.md).
-
-Os testes específicos podem ser executados após a compilação:
-
-```powershell
-dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --security
-dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --financial
-dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --stock
-dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --ux
-dotnet run --project Tests/CaixaLume.IntegrationTests/CaixaLume.IntegrationTests.csproj --no-build -- --central
-dotnet run --project Tests/CaixaLume.Management.UnitTests/CaixaLume.Management.UnitTests.csproj
-node --test Tests/Web/*.test.js
-dotnet build Server/CaixaLume.Management.csproj
-python Tests/management_server_test.py
-```
-
-A suíte Python de HTTPS também requer o pacote `cryptography`. Resultado local desta padronização: **224 verificações aprovadas**, sem contar interrupções como aprovação. Os testes de recuperação usam arquivos temporários e precisam de permissão para mover arquivos. A validação visual completa no equipamento de uso e a atualização da instalação Linux são verificações separadas.
+Projeto de portfólio e aprendizado conduzido por [Gabryelle Lima](https://github.com/gabryelle-lima), com apoio de IA na implementação e revisão do código. O repositório reúne o produto, suas decisões técnicas e evidências de testes.

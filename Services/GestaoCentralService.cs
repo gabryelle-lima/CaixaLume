@@ -43,11 +43,11 @@ internal sealed class GestaoCentralService
             {
                 string reason = (int)response.StatusCode switch
                 {
-                    401 => "O servidor recusou o código: ele pode estar incorreto, expirado, já utilizado ou ter sido gerado em outro servidor. Gere um código no painel do Aurora.",
+                    401 => "O servidor recusou o código: ele pode estar incorreto, expirado, já utilizado ou ter sido gerado em outro servidor. Gere um código no painel de gestão.",
                     429 => "O servidor recebeu muitas tentativas. Aguarde um minuto antes de tentar novamente.",
                     404 => "Esse endereço não oferece o serviço de vínculo. Confira o endereço e a porta do servidor.",
                     400 => "O servidor recusou o formato da solicitação de vínculo. Solicite a verificação da versão do serviço.",
-                    >= 500 => "O serviço apresentou uma falha interna. Consulte os registros no Aurora antes de gerar outro código.",
+                    >= 500 => "O serviço apresentou uma falha interna. Consulte os registros do servidor antes de gerar outro código.",
                     _ => "O servidor recusou a solicitação. Informe o código HTTP ao suporte."
                 };
                 throw new InvalidOperationException($"{reason} (HTTP {(int)response.StatusCode})");

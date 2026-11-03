@@ -33,7 +33,7 @@ Evidência **visual** significa observação da interface em execução; **códi
 
 **Aceite proposto:** sair e voltar preserva o carrinho; reabrir após resultado incerto recupera a mesma operação; descartar exige decisão explícita e não perde uma cobrança pendente.
 
-Fonte: [estado do PDV](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:4), [limpeza](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:209), [navegação e logout](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:257).
+Fonte: [estado do PDV](../../Web/app.js#L4), [limpeza](../../Web/app.js#L209), [navegação e logout](../../Web/app.js#L257).
 
 ### UX-02 — A mesma digitação de dinheiro produz valores diferentes
 
@@ -45,7 +45,7 @@ Fonte: [estado do PDV](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/W
 
 **Aceite proposto:** `1427`, `14,27`, colagem de `R$ 14,27`, apagar e corrigir seguem a mesma regra em todos os campos monetários correspondentes.
 
-Fonte: [entrada monetária Web](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:12), [pagamento nativo](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/PagamentoForm.cs:88), [interpretação decimal](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Services/PagamentoService.cs:14).
+Fonte: [entrada monetária Web](../../Web/app.js#L12), [pagamento nativo](../../Forms/PagamentoForm.cs#L88), [interpretação decimal](../../Services/PagamentoService.cs#L14).
 
 ### UX-03 — Produtos por peso entram com 250 g presumidos
 
@@ -57,7 +57,7 @@ Fonte: [entrada monetária Web](C:/Users/macha/Documents/Codex/2026-08-24/sis/Ca
 
 **Aceite proposto:** um produto KG não é cobrado sem peso confirmado; 0,315 kg a R$ 19,90/kg exibe R$ 6,27, com unidade e quantidade reconhecíveis.
 
-Fonte: [inclusão e quantidade Web](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:66), [linha do carrinho](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:95), [inclusão nativa](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/PdvForm.cs:272).
+Fonte: [inclusão e quantidade Web](../../Web/app.js#L66), [linha do carrinho](../../Web/app.js#L95), [inclusão nativa](../../Forms/PdvForm.cs#L272).
 
 ### UX-04 — Código desconhecido pode deixar outro produto selecionado na entrada de mercadoria
 
@@ -69,7 +69,7 @@ Fonte: [inclusão e quantidade Web](C:/Users/macha/Documents/Codex/2026-08-24/si
 
 **Aceite proposto:** código inexistente não permite registrar a mercadoria anterior; o código recebido de outra tela seleciona corretamente o produto; a leitura não salva automaticamente a entrada.
 
-Fonte: [inicialização e eventos](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/EntradaMercadoriaForm.cs:29), [correspondência e gravação](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/EntradaMercadoriaForm.cs:39).
+Fonte: [inicialização e eventos](../../Forms/EntradaMercadoriaForm.cs#L29), [correspondência e gravação](../../Forms/EntradaMercadoriaForm.cs#L39).
 
 ### UX-05 — A forma de pagamento anterior permanece selecionada na próxima venda Web
 
@@ -81,7 +81,7 @@ Fonte: [inicialização e eventos](C:/Users/macha/Documents/Codex/2026-08-24/sis
 
 **Aceite proposto:** duas vendas consecutivas, com meios diferentes, não dependem de o operador lembrar a seleção anterior; forma e total ficam claros antes da confirmação.
 
-Fonte: [abertura do pagamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:141), [sucesso e limpeza](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:165), [padrão nativo](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/PagamentoForm.cs:108).
+Fonte: [abertura do pagamento](../../Web/app.js#L141), [sucesso e limpeza](../../Web/app.js#L165), [padrão nativo](../../Forms/PagamentoForm.cs#L108).
 
 ## Achados de prioridade média
 
@@ -93,7 +93,7 @@ Fonte: [abertura do pagamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/Cai
 
 **Aceite:** uma falha deixa uma mensagem e uma ação visíveis até ser resolvida; o operador consegue explicar se a venda foi concluída, recusada ou permanece pendente.
 
-Fonte: [carregamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:130), [resultado pendente](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:170), [fechar modal](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:219), [notificações](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/ui.js:10).
+Fonte: [carregamento](../../Web/app.js#L130), [resultado pendente](../../Web/app.js#L170), [fechar modal](../../Web/app.js#L219), [notificações](../../Web/ui.js#L10).
 
 ### UX-07 — O CSS pode manter conteúdos que o código tenta ocultar
 
@@ -103,7 +103,7 @@ Fonte: [carregamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/We
 
 **Recomendação e aceite:** garantir a ocultação no estilo compartilhado e verificar as transições dinheiro→Pix→cartão e vazio→dados. Nenhuma tela deve apresentar simultaneamente dados e uma mensagem que os negue.
 
-Fonte: [estilos do pagamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/styles.css:5), [estilos do painel](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/home.css:1), [alternância do pagamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:153), [alternância dos estados vazios](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/home.js:20).
+Fonte: [estilos do pagamento](../../Web/styles.css#L5), [estilos do painel](../../Web/home.css#L1), [alternância do pagamento](../../Web/app.js#L153), [alternância dos estados vazios](../../Web/home.js#L20).
 
 ### UX-08 — Validade vencida usa verde e falta de data parece situação verificada
 
@@ -113,7 +113,7 @@ Fonte: [estilos do pagamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/Caix
 
 **Aceite:** ausência de data não comunica validade conferida; todos os alertas aplicáveis podem ser identificados sem depender apenas de cores.
 
-Fonte: [cores dos status](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/ProdutosForm.cs:72), [definição dos status](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/ProdutosForm.cs:93).
+Fonte: [cores dos status](../../Forms/ProdutosForm.cs#L72), [definição dos status](../../Forms/ProdutosForm.cs#L93).
 
 ### UX-09 — O resumo de caixa chama despesas totais de “despesas em dinheiro”
 
@@ -123,7 +123,7 @@ Fonte: [cores dos status](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLum
 
 **Recomendação e aceite:** exibir somente despesas em dinheiro no cartão correspondente e separar as demais. Conferir um cenário com uma despesa em dinheiro e outra em Pix: cada uma deve aparecer na categoria correta.
 
-Fonte: [rótulo](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/CaixaForm.cs:61), [valor apresentado](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/CaixaForm.cs:99).
+Fonte: [rótulo](../../Forms/CaixaForm.cs#L61), [valor apresentado](../../Forms/CaixaForm.cs#L99).
 
 ### UX-10 — O cadastro prioriza imagem antes de informações necessárias para vender
 
@@ -133,7 +133,7 @@ Fonte: [rótulo](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/C
 
 **Aceite:** o cadastro básico pode ser compreendido na primeira área visível; a consulta por código está junto do campo que a inicia; campos obrigatórios e erros são evidentes.
 
-Fonte: [ordem dos grupos](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/ProdutoForm.cs:55), [consulta pública](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/ProdutoForm.cs:189).
+Fonte: [ordem dos grupos](../../Forms/ProdutoForm.cs#L55), [consulta pública](../../Forms/ProdutoForm.cs#L189).
 
 ### UX-11 — Alguns erros fecham o formulário antes de permitir a correção
 
@@ -143,7 +143,7 @@ Fonte: [ordem dos grupos](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLum
 
 **Recomendação e aceite:** validar antes de fechar; manter valor e observação; mostrar erro junto do campo e levar o foco a ele. Uma sangria recusada deve permitir corrigir o valor no mesmo formulário.
 
-Fonte: [movimentação de caixa](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/CaixaForm.cs:179), [fechamento](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/CaixaForm.cs:197), [abertura](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/CaixaForm.cs:215).
+Fonte: [movimentação de caixa](../../Forms/CaixaForm.cs#L179), [fechamento](../../Forms/CaixaForm.cs#L197), [abertura](../../Forms/CaixaForm.cs#L215).
 
 ### UX-12 — “Ajustar saldo” muda o significado do campo de quantidade
 
@@ -153,7 +153,7 @@ Fonte: [movimentação de caixa](C:/Users/macha/Documents/Codex/2026-08-24/sis/C
 
 **Aceite:** antes de confirmar, o usuário identifica o saldo resultante e a diferença sem fazer cálculo mental.
 
-Fonte: [ações de estoque](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/EstoqueForm.cs:65), [mudança e aplicação da operação](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/EstoqueForm.cs:132).
+Fonte: [ações de estoque](../../Forms/EstoqueForm.cs#L65), [mudança e aplicação da operação](../../Forms/EstoqueForm.cs#L132).
 
 ### UX-13 — A navegação não mantém um contexto único entre módulos
 
@@ -163,7 +163,7 @@ Fonte: [ações de estoque](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaL
 
 **Aceite:** o operador identifica onde está, como voltar e quais ações pode executar; o comportamento é consistente independentemente da tecnologia usada na tela.
 
-Fonte: [abertura de módulos](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/AppWebViewForm.cs:170), [fallback](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/AppWebViewForm.cs:185), [restrição após clique](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/MainForm.cs:241).
+Fonte: [abertura de módulos](../../Forms/AppWebViewForm.cs#L170), [fallback](../../Forms/AppWebViewForm.cs#L185), [restrição após clique](../../Forms/MainForm.cs#L241).
 
 ### UX-14 — Cortes e baixo contraste prejudicam a leitura rápida
 
@@ -175,7 +175,7 @@ Os botões nativos usam branco sobre `#10B981`, com contraste calculado de **2,5
 
 **Aceite:** ações principais, datas e valores completos acessíveis nas resoluções suportadas e escalas 100%, 125% e 150%; textos ativos com contraste apropriado. Essa matriz ainda precisa ser executada.
 
-Fonte: [cabeçalho nativo](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/MainForm.cs:45), [cores dos botões](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/UiTheme.cs:57), [modal de estoque](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/EstoqueForm.cs:187).
+Fonte: [cabeçalho nativo](../../Forms/MainForm.cs#L45), [cores dos botões](../../Forms/UiTheme.cs#L57), [modal de estoque](../../Forms/EstoqueForm.cs#L187).
 
 ### UX-15 — Foco e atalhos não seguem sempre as mesmas regras dos botões
 
@@ -185,7 +185,7 @@ Fonte: [cabeçalho nativo](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLu
 
 **Aceite:** completar uma venda por teclado sem saltos inesperados; F4 respeita caixa fechado e qualquer modal aberto; editar quantidade não perde a próxima ação.
 
-Fonte: [reconstrução do carrinho](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:88), [atalhos Web](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Web/app.js:266), [atalhos nativos](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/PdvForm.cs:110), [finalização nativa](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/PdvForm.cs:418).
+Fonte: [reconstrução do carrinho](../../Web/app.js#L88), [atalhos Web](../../Web/app.js#L266), [atalhos nativos](../../Forms/PdvForm.cs#L110), [finalização nativa](../../Forms/PdvForm.cs#L418).
 
 ### UX-16 — Ações de edição e recuperação não acompanham o estado do registro
 
@@ -195,7 +195,7 @@ Fonte: [reconstrução do carrinho](C:/Users/macha/Documents/Codex/2026-08-24/si
 
 **Aceite:** editar nunca inicia criação silenciosamente; um administrador consegue recuperar uma desativação indevida pela interface; comandos indisponíveis são reconhecíveis antes do clique.
 
-Fonte: [ações de produtos](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/ProdutosForm.cs:115), [ações de usuários](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/UsuariosForm.cs:10), [edição de despesas](C:/Users/macha/Documents/Codex/2026-08-24/sis/CaixaLume/Forms/DespesasForm.cs:13).
+Fonte: [ações de produtos](../../Forms/ProdutosForm.cs#L115), [ações de usuários](../../Forms/UsuariosForm.cs#L10), [edição de despesas](../../Forms/DespesasForm.cs#L13).
 
 ## Elementos que vale preservar
 
